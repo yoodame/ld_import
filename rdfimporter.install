@@ -1,0 +1,9 @@
+<?php
+
+/**
+ * Implementation of hook_enable().
+ */
+function rdfimporter_enable() {
+  //clear the cache to display in Feeds as available plugin.
+  cache_clear_all('plugins:feeds:plugins', 'cache');
+}

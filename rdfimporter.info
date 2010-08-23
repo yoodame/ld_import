@@ -1,0 +1,10 @@
+; $Id:$
+name = "RDF Importer"
+description = "A set of Feeds plugins used to import remote RDF content via SPARQL and Linked Data"
+package = RDF
+dependencies[] = feeds
+dependencies[] = feeds_ui
+core = 6.x
+php = 5.2
+
+
