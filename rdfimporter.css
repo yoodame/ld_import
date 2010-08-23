@@ -1,0 +1,24 @@
+table.rdfimporter-samples { table-layout: fixed; }
+
+table.rdfimporter-samples td {
+  vertical-align: top;
+  overflow: hidden;
+  font-size: 11px;
+  word-wrap: break-word;
+}
+
+table.rdfimporter-samples th.first { width: 30%; }
+
+table.rdfimporter-samples .property-uri { color: #999; }
+
+table.rdfimporter-samples .property-label { display: block; }
+
+table.rdfimporter-samples ul { margin: 0; }
+
+table.rdfimporter-samples ul li,
+table.rdfimporter-samples p {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}

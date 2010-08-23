@@ -1,0 +1,200 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function rdfimporter_menu() {
+  $items = array();
+  $items['rdfimporter/test'] = array(
+    'title' => 'VIVO Testing',
+    'page callback' => 'rdfimporter_test_page',
+    'access arguments' => array('access content'),
+    'file' => 'rdfimporter.test.inc',
+  );
+  $items['node/%node/import_preview'] = array(
+    'title' => 'Preview',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('rdfimporter_preview_tab_form', 1),
+    'access callback' => 'rdfimporter_access',
+    'access arguments' => array(1),
+    'file' => 'rdfimporter.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 9,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function rdfimporter_init() {
+  // module_load_include('inc', 'rdfimporter', 'rdfimporter.sparql');
+  module_load_include('inc', 'rdfimporter', 'rdfimporter.classes');
+  rdfimporter_include_arc();
+} 
+
+/**
+ * Implementation of hook_theme().
+ */
+function rdfimporter_theme() {
+  return array(
+    'rdfimporter_samples' => array(
+      'arguments' => array('samples' => array()),
+      'file' => 'rdfimporter.pages.inc',
+    ),
+    'rdfimporter_sample' => array(
+      'arguments' => array('sample' => array()),
+      'file' => 'rdfimporter.pages.inc',
+    ),
+  );
+}
+
+/**
+ * Menu access callback.
+ *
+ * Only display the "Preview" local task if the current node
+ * is used with a Feeds importer (attached to the node type)
+ * and that importer uses RDF Importer fetcher
+ *
+ * NOTE: As of Feeds 6.x-1.0-beta4 it's not possible to have multiple importers
+ * attached to a single content type, but should eventually be possible
+ *
+ * @param $node
+ *   Node object
+ * @return
+ *   TRUE if an RDF Importer fetcher is being used, FALSE otherwise 
+ */
+function rdfimporter_access($node) {
+  $feeds_access = feeds_access('import', $node);
+  $access = FALSE;
+  $plugins = array_keys(rdfimporter_feeds_plugins());
+  foreach (feeds_importer_load_all() as $importer) {
+    if ($importer->config['content_type'] == $node->type && in_array(get_class($importer->fetcher), $plugins)) {
+      $access = TRUE;
+    }
+  }
+  return ($access && $feeds_access) ? TRUE : FALSE;
+}
+
+/**
+* Implementation of hook_feeds_plugins().
+*/
+function rdfimporter_feeds_plugins() {
+  $path = drupal_get_path('module', 'rdfimporter') . '/plugins';
+  $info = array();
+  $info['RdfImporterSparqlFetcher'] = array(
+    'name' => 'RDFimporter SPARQL Fetcher',
+    'description' => 'Fetches RDF from a SPARQL endpoint',
+    'hidden' => FALSE,
+    'handler' => array(
+      'parent' => 'FeedsFetcher',
+      'class' => 'RdfImporterSparqlFetcher',
+      'file' => 'RdfImporterSparqlFetcher.inc',
+      'path' => $path,
+    ),
+  );
+  $info['RdfImporterLinkedDataFetcher'] = array(
+    'name' => 'RDFimporter Linked Data Fetcher',
+    'description' => 'Fetches RDF via HTTP content negotiation',
+    'hidden' => FALSE,
+    'handler' => array(
+      'parent' => 'FeedsFetcher',
+      'class' => 'RdfImporterLinkedDataFetcher',
+      'file' => 'RdfImporterLinkedDataFetcher.inc',
+      'path' => $path,
+    ),
+  );
+	$info['RdfImporterParser'] = array(
+    'name' => 'RDFimporter Parser',
+    'description' => 'Parses RDF data',
+    'hidden' => FALSE,
+    'handler' => array(
+      'parent' => 'FeedsParser',
+      'class' => 'RdfImporterParser',
+      'file' => 'RdfImporterParser.inc',
+      'path' => $path,
+    ),
+  );
+	$info['RdfImporterNodeProcessor'] = array(
+    'name' => 'RDFimporter Node Processor',
+    'description' => 'Creates and updates nodes from RDF',
+    'hidden' => FALSE,
+    'handler' => array(
+      'parent' => 'FeedsNodeProcessor',
+      'class' => 'RdfImporterNodeProcessor',
+      'file' => 'RdfImporterNodeProcessor.inc',
+      'path' => $path,
+    ),
+  );
+  return $info;
+}
+
+function rdfimporter_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'feeds_ui_mapping_form' && (get_class($form['#importer']->parser) == 'RdfImporterParser')) {
+    drupal_add_css(drupal_get_path('module', 'rdfimporter') . '/rdfimporter.css');
+    $samples = $form['#importer']->parser->loadSamples();
+    $output = theme('rdfimporter_samples', $samples);
+    $fieldset = array(
+      '#type' => 'fieldset',
+      '#title' => t('Samples'),
+      '#value' => $output,
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['legendset']['#suffix'] = drupal_render($fieldset);
+    // $property['values'] = array_slice($property['values'], 0, RDFIMPORTER_PARSER_MAX_SAMPLES);
+    
+  }
+}
+
+
+/**
+ * Include the ARC2 library.
+ *
+  * If ARC2 is already installed with RDF module use that copy,
+  * otherwise it should be installed in rdfimporter/arc
+  * and if it's not, set a warning message 
+ */
+function rdfimporter_include_arc() {
+  if (!class_exists('ARC2')) {
+    if (file_exists('./'. RDF_ARC2_PATH . '/ARC2.php')) {
+      require './'. RDF_ARC2_PATH . '/ARC2.php';
+    }
+    else {
+      @require './'. drupal_get_path('module', 'rdfimporter') .'/arc/ARC2.php';
+    }
+  }
+  if (!class_exists('ARC2')) {
+    drupal_set_message(t('The ARC2 libraries could not be loaded. ARC2 is required for the RDF Importer module to work. The libraries should be !link and placed in a folder named "arc" inside the "rdfimporter" module folder.', array('!link' => l('downloaded', 'http://arc.semsol.org/download'))), 'warning', FALSE);
+  }
+}
+
+/**
+ * Validate a SPARQL query string
+ */
+function rdfimporter_validate_sparql($query, &$errors = NULL) {
+  $parser = ARC2::getSPARQLParser();
+  $parser->parse($query);
+
+  if ($parser->getErrors()) {
+    $errors = $parser->getErrors();
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Validation functions from the RDF module
+ */
+function rdfimporter_validate_uri($uri) {
+  return rdfimporter_is_valid_url($uri) || rdfimporter_is_valid_urn($uri);
+}
+
+function rdfimporter_is_valid_url($url) {
+  static $allowed_characters = '[a-z0-9\/:_\-_\.\?\$,;~=#&%\+]';
+  return preg_match("/^([a-z]+):\/\/" . $allowed_characters . "+$/i", (string)$url);
+}
+
+function rdfimporter_is_valid_urn($urn) {
+  return preg_match('/^urn:/', $urn) || preg_match('/^mailto:/', $urn); // FIXME
+}
