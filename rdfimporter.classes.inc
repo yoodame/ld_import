@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 define('RDFS_LABEL_URI', 'http://www.w3.org/2000/01/rdf-schema#label');
 

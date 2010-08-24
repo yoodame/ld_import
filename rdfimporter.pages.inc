@@ -1,4 +1,10 @@
 <?php
+// $Id$
+
+/**
+ * @file
+ * Module operations.
+ */
 
 /**
  * Render a feed preview table with a form to refresh sample content
@@ -26,7 +32,7 @@ function rdfimporter_preview_tab_form(&$form_state, $node) {
     
     $form = array(
       '#type' => 'fieldset',
-      '#title' => 'Importer: '. l($source->importer->config['name'], 'admin/build/feeds/edit/'.$source->importer->id.'/mapping'),
+      '#title' => 'Importer: ' . l($source->importer->config['name'], 'admin/build/feeds/edit/' . $source->importer->id . '/mapping'),
       '#collapsible' => FALSE,
       '#collapsed' => FALSE,
     );

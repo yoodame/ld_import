@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * @file
@@ -59,7 +60,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       // Loop through the results and extract every value that's a URI
       foreach ($results as $row) {
         foreach ($row as $key => $value) {
-          if (isset($row[$key.' type']) && $row[$key.' type'] == 'uri') {
+          if (isset($row[$key . ' type']) && $row[$key . ' type'] == 'uri') {
             $uri_list[$value] = $value;
           }
         }

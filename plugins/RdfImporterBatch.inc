@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * @file
@@ -91,11 +92,11 @@ class RdfImporterBatch extends FeedsImportBatch {
       if (!($errors = $this->arc->getErrors()) && !empty($props)) {
         $individuals[$uri] = $uri;
       }
-      else if (!$errors && empty($props)) {
-        watchdog('rdfimporter', 'The remote resource @uri could not be fetched. No data was returned.', array('@uri' => '<'.$uri.'>'));
+      elseif (!$errors && empty($props)) {
+        watchdog('rdfimporter', 'The remote resource @uri could not be fetched. No data was returned.', array('@uri' => '<' . $uri . '>'));
       }
       else {
-        watchdog('rdfimporter', 'The remote resource @uri could not be fetched. The following errors were returned: %errors', array('@uri' => '<'.$uri.'>', '%errors' => implode('. ', $errors)));
+        watchdog('rdfimporter', 'The remote resource @uri could not be fetched. The following errors were returned: %errors', array('@uri' => '<' . $uri . '>', '%errors' => implode('. ', $errors)));
       }
       
       $i++;

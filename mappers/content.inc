@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * @file
@@ -13,7 +14,7 @@ function content_rdfimporter_node_processor_targets_alter(&$targets, $content_ty
   content_feeds_node_processor_targets_alter($new_targets, $content_type);
   
   // Change the callback so we can do some preprocessing
-  foreach($new_targets as &$target) {
+  foreach ($new_targets as &$target) {
     $target['callback'] = 'content_rdfimporter_preprocess_target';
   }
   $targets = array_merge($targets, $new_targets);
@@ -32,7 +33,7 @@ function content_rdfimporter_preprocess_target(&$node, $target, $property) {
   }
   
   $values = array();
-  foreach($property->getValues() as $item) {
+  foreach ($property->getValues() as $item) {
     $value = ($item->getType() == 'uri') ? $item->getLabel() : $item->getValue();
     if (trim($value)) {
       $values[] = $value;

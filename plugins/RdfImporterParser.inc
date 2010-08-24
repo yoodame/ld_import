@@ -1,5 +1,11 @@
 <?php
+// $Id$
 
+/**
+ * @file
+ * Home of the RdfImporterSparqlFetcher.
+ */
+ 
 define('RDFIMPORTER_PARSER_MAX_SAMPLES', 4);
 
 /**
@@ -79,7 +85,7 @@ class RdfImporterParser extends FeedsParser {
   public function loadSamples() {
     $samples = array();
     $query = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = '%s'", $this->id);
-    while($result = db_fetch_object($query)) {
+    while ($result = db_fetch_object($query)) {
       $feed_source = feeds_source($this->id, $result->feed_nid);
       $config = $feed_source->getConfigFor($this);
       if (isset($config['samples'])) {
