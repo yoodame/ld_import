@@ -287,7 +287,7 @@ function rdfimporter_include_arc() {
     }
   }
   if (!class_exists('ARC2')) {
-    drupal_set_message(t('The ARC2 libraries could not be loaded. ARC2 is required for the RDFimporter module to work. The libraries should be !link and placed in a folder named "arc" inside the RDFimporter module folder.', array('!link' => l('downloaded', 'http://arc.semsol.org/download'))), 'warning', FALSE);
+    drupal_set_message(t('The ARC2 library could not be loaded. ARC2 is required for the RDFimporter module to work. Check the INSTALL file inside the rdfimporter module folder to find out how ARC can be installed.'), 'warning', FALSE);
   }
 }
 
