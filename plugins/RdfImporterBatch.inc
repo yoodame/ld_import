@@ -5,113 +5,75 @@
  * @file
  * Home of the RdfImporterBatch.
  *
- * To support batching during fetching, Feeds must be patched 
- * @see http://drupal.org/node/744660
- *
- * Troughout the import process, a single ARC_Resource object
+ * Troughout the processing stage, a single ARC_Resource object
  * gets passed around. This object handles all HTTP requests for
  * remote data and caches all the data it fetches. By passing around
  * this single instance, we can share all previously
- * fetched data and save a whole lot of HTTP requests. 
+ * fetched data and potentially save a whole lot of HTTP requests. 
  */
  
-define('RDFIMPORTER_FETCHER_BATCH_SIZE', 5);
-
 /**
- * Definition of the import batch object created on the fetching stage by RDF Importer fetchers
+ * Class definition for RdfImporterBatch.
  */
 class RdfImporterBatch extends FeedsImportBatch {
-  protected $uri_list;
-  protected $arc;
-  public $fetcher_position;
-  public $fetcher_total;
-  public $fetcher_batch_size;
+  public $uri_list;
+  public $arc;
+  
+  // These 
   public $samples;
-  public $preview;
+  public $sample_limit;
+  public $language;
   
   /**
    * Constructor.
    */
-  public function __construct($uri_list, ARC2_Resource $resource, $preview = FALSE) {
+  public function __construct($uri_list, ARC2_Resource $arc) {
     parent::__construct();
     $this->uri_list = $uri_list;
-    $this->fetcher_position = 0;
-    $this->fetcher_total = count($uri_list);
-    
-    // Only use batch limit if batching is supported
-    // and if this is not a standalone import
-    if (method_exists($this, 'getProgress')) {
-      $this->setTotal(FEEDS_PARSING, count($uri_list));
-      $this->fetcher_batch_size = RDFIMPORTER_FETCHER_BATCH_SIZE;
-    }
-    else {
-      $this->fetcher_batch_size = 1000000;
-    }
-    
-    $this->arc = $resource;
-    $this->preview = $preview;
-  }
-  
-  /**
-   * Provide read access to properties with magic method __get().
-   */
-  public function __get($name) {
-    if ($this->$name) {
-      return $this->$name;
-    }
-    return NULL;
+    $this->arc = $arc;
+    $this->samples = array();
+    $this->sample_limit = RDFIMPORTER_MAX_SAMPLES;
+    $this->fetch_labels = FALSE;
   }
   
   /**
    * Implementation of FeedsImportBatch::getRaw();
    *
-   * @todo It might be nice to retry failed fetching 
-   *   attempts instead of just logging them.
-   * @todo Consolidate some of the error logging
-   *   and provide a final status message if some
-   *   resources could not be fetched
+   * @todo Once batching is supported at the fetching/parsing level
+   *  it would be nice to attempt fetching data here. But for now
+   *  we have to wait until the processing stage.
    */
   public function getRaw() {
-    // $this->arc->index = array();
-    
-    $position = $this->fetcher_position;
-    $total = $this->fetcher_total;
-    $max = $this->fetcher_batch_size;
-    
-    $i = 0;
     $individuals = array();
     
-    while ($position < $total && $i < $max) {
-      $uri = $this->uri_list[$position];
+    foreach ($this->uri_list as $uri) {
       $this->arc->resetErrors();
       $this->arc->setURI($uri);
-      $props = $this->arc->getProps();
+      // $props = $this->arc->getProps();
       
       // Only continue importing this URI if there were no errors
       // and property data was retrieved
-      if (!($errors = $this->arc->getErrors()) && !empty($props)) {
+      // if (!($errors = $this->arc->getErrors()) && !empty($props)) {
+      if (!($errors = $this->arc->getErrors())) {
         $individuals[$uri] = $uri;
       }
-      elseif (!$errors && empty($props)) {
-        watchdog('rdfimporter', 'The remote resource @uri could not be fetched. No data was returned.', array('@uri' => '<' . $uri . '>'));
-      }
-      else {
-        watchdog('rdfimporter', 'The remote resource @uri could not be fetched. The following errors were returned: %errors', array('@uri' => '<' . $uri . '>', '%errors' => implode('. ', $errors)));
-      }
-      
-      $i++;
-      $position++;
+      // elseif (!$errors && empty($props)) {
+      //   watchdog('rdfimporter', 'The remote resource @uri could not be fetched. No data was returned.', array('@uri' => $uri));
+      // }
+      // else {
+      //   watchdog('rdfimporter', 'The remote resource @uri could not be fetched. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
+      // }
     }
-    
-    $this->fetcher_position = $position;
-    
-    // Only set progress if batching is supported
-    if (method_exists($this, 'getProgress')) {
-      $progress = ($position == $total) ? FEEDS_BATCH_COMPLETE : $position;
-      $this->setProgress(FEEDS_PARSING, $progress);
-    }
-    
     return $individuals;
+  }
+  
+  /**
+   * Override FeedsImportBatch:shiftItem() to return RdfImporterIndividual objects.
+   */
+  public function shiftItem() {
+    $next = array_shift($this->items);
+    $this->current_item = ($next) ? new RdfImporterIndividual($next, $this->arc, $this->language) : NULL;
+    return $this->current_item;
   }
   
   /**
@@ -128,9 +90,11 @@ class RdfImporterBatch extends FeedsImportBatch {
   }
   
   function __wakeup() {
-    // Trigger file includes using ARC's helper functions
+    rdfimporter_include_arc();
+    // Trigger file includes using ARC's helper functions.
     ARC2::getResource();
     ARC2::getRemoteStore();
     $this->arc = unserialize($this->arc);
   }
 }
+

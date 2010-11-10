@@ -1,25 +1,21 @@
 <?php
+// $Id$
+
+/**
+ * @file
+ * RDFimporter module - Feeds plugins with added 'preview' functionality.
+ */
 
 /**
  * Implementation of hook_menu().
  */
 function rdfimporter_menu() {
   $items = array();
-  $items['rdfimporter/test'] = array(
-    'title' => 'VIVO Testing',
+  $items['rdfimporter/testing'] = array(
+    'title' => 'Testing Area',
     'page callback' => 'rdfimporter_test_page',
     'access arguments' => array('access content'),
     'file' => 'rdfimporter.test.inc',
-  );
-  $items['node/%node/import_preview'] = array(
-    'title' => 'Preview',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('rdfimporter_preview_tab_form', 1),
-    'access callback' => 'rdfimporter_access',
-    'access arguments' => array(1),
-    'file' => 'rdfimporter.pages.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 9,
   );
   return $items;
 }
@@ -28,7 +24,6 @@ function rdfimporter_menu() {
  * Implementation of hook_init().
  */
 function rdfimporter_init() {
-  // module_load_include('inc', 'rdfimporter', 'rdfimporter.sparql');
   module_load_include('inc', 'rdfimporter', 'rdfimporter.classes');
   rdfimporter_include_arc();
 } 
@@ -40,40 +35,11 @@ function rdfimporter_theme() {
   return array(
     'rdfimporter_samples' => array(
       'arguments' => array('samples' => array()),
-      'file' => 'rdfimporter.pages.inc',
     ),
     'rdfimporter_sample' => array(
       'arguments' => array('sample' => array()),
-      'file' => 'rdfimporter.pages.inc',
     ),
   );
-}
-
-/**
- * Menu access callback.
- *
- * Only display the "Preview" local task if the current node
- * is used with a Feeds importer (attached to the node type)
- * and that importer uses RDF Importer fetcher
- *
- * NOTE: As of Feeds 6.x-1.0-beta4 it's not possible to have multiple importers
- * attached to a single content type, but should eventually be possible
- *
- * @param $node
- *   Node object
- * @return
- *   TRUE if an RDF Importer fetcher is being used, FALSE otherwise 
- */
-function rdfimporter_access($node) {
-  $feeds_access = feeds_access('import', $node);
-  $access = FALSE;
-  $plugins = array_keys(rdfimporter_feeds_plugins());
-  foreach (feeds_importer_load_all() as $importer) {
-    if ($importer->config['content_type'] == $node->type && in_array(get_class($importer->fetcher), $plugins)) {
-      $access = TRUE;
-    }
-  }
-  return ($access && $feeds_access) ? TRUE : FALSE;
 }
 
 /**
@@ -129,48 +95,204 @@ function rdfimporter_feeds_plugins() {
   return $info;
 }
 
-function rdfimporter_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'feeds_ui_mapping_form' && (get_class($form['#importer']->parser) == 'RdfImporterParser')) {
-    drupal_add_css(drupal_get_path('module', 'rdfimporter') . '/rdfimporter.css');
-    $samples = $form['#importer']->parser->loadSamples();
-    $output = theme('rdfimporter_samples', $samples);
-    $fieldset = array(
-      '#type' => 'fieldset',
-      '#title' => t('Samples'),
-      '#value' => $output,
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['legendset']['#suffix'] = drupal_render($fieldset);
-    // $property['values'] = array_slice($property['values'], 0, RDFIMPORTER_PARSER_MAX_SAMPLES);
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Add importer id and feed nid (0 for node-less feeds) to the Feeds source form.
+ * These are needed for the batch process that fetches feed previews. The values 
+ * must be added here with an alter because the source form itself has no 
+ * awareness of the active importer or feed nid.
+ */
+function rdfimporter_form_alter(&$form, $form_state, $form_id) {
+  if ($form['#id'] == ('node-form' || 'feed-import-form')) {
     
+    // Only continue if there is a Feeds source form present
+    // and our parser is being used.
+    if (isset($form['feeds']['RdfImporterParser'])) {
+      
+      $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form['#feed_id'];
+      $feed_nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : 0;
+      
+      // If the node form has not been saved yet remove 
+      // some of the preview elements and change the text.
+      if ($form['#id'] == 'node-form' && !$feed_nid) {
+        // unset($form['feeds']['RdfImporterParser']['preview']['warning']);
+        $form['feeds']['RdfImporterParser']['preview']['status_message']['#value'] = t('Run a preview import to see sample data for this feed. The preview is also used to show available properties on the mappings page.');
+        $form['feeds']['RdfImporterParser']['preview']['refresh']['#value'] = t('Save and Preview');
+      }
+      
+      // Store values required by refresh submit handler.
+      $form['rdfimporter_feed_nid'] = array(
+        '#type' => 'value',
+        '#value' => $feed_nid,
+      );
+      $form['rdfimporter_importer'] = array(
+        '#type' => 'value',
+        '#value' => $importer_id,
+      );
+      
+      // If there is sample data, also add an "Edit mappings" link.
+      if (isset($form['feeds']['RdfImporterParser']['preview']['samples_table'])) {
+        $form['feeds']['RdfImporterParser']['mappings_link'] = array(
+          '#prefix' => '<em>',
+          '#value' => l('Edit mappings', 'admin/build/feeds/edit/' . $importer_id . '/mapping'),
+          '#suffix' => '</em>',
+          '#weight' => -15,
+        );
+      }
+    }
   }
 }
 
+/**
+ * Submit handler for preview 'Save and Refresh' button
+ *
+ * Sets up a batch job to do a 'preview' import.
+ *
+ * This can be activated from two places:
+ *  1. Node form
+ *  2. Feeds' standalone import form
+ * Form arrays will be different depending on where the preview originates.
+ */
+function rdfimporter_refresh_preview_submit($form, &$form_state) {
+  $importer_id = ($form['#importer_id']) ? $form['#importer_id'] : $form_state['values']['rdfimporter_importer'];
+  $feed_nid = ($form_state['values']['rdfimporter_feed_nid']) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
+  
+  if (!$importer_id) {
+    drupal_set_message(t('Feed preview was canceled because the importer ID was missing.'), 'warning');
+    return;
+  }
+  
+  $batch = array(
+    'operations' => array(
+      array('rdfimporter_refresh_preview_process', array($importer_id, $feed_nid)),
+      ),
+    'title' => t('Refreshing feed preview'),
+    'init_message' => t('Fetching data...'),
+    'progress_message' => t('Fetching data...'),
+    'error_message' => t('Could not finish fetching data.'),
+    'finished' => 'rdfimporter_refresh_preview_finished'
+  );
+  batch_set($batch);
+  
+  // For a node form - save the node, for a Feeds import form - save the source.
+  if ($form['#id'] == 'node-form') {
+    module_load_include('inc', 'node', 'node.pages');
+    node_form_submit($form, &$form_state);
+  }
+  else {
+    $source = feeds_source($form['#importer_id']);
+    $source->addConfig($form_state['values']['feeds']);
+    $source->save();
+  }
+}
+
+/**
+ * Batch API "process" callback for preview.
+ *
+ * Creates a FeedsImportBatch object that gets serialized and
+ * saved to the database between page loads. 
+ */
+function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &$context) {
+  $context['finished'] = 1;
+  
+  // Stashing the nid in here so we can do a drupal_goto()
+  // redirect after the batch finishes.
+  $context['results']['feed_nid'] = $feed_nid;
+  
+  try {
+    $source = feeds_source($importer_id, $feed_nid);
+    
+    // Run a feed preview() to get an initial FeedsImportBatch object
+    // and save it in the Batch API's sandbox to use for each pass.
+    // The object has to be serialized/unserialized by hand otherwise
+    // it will not re-initialize correctly.
+    if (!isset($context['sandbox']['feeds_batch'])) {
+      $feeds_batch = $source->preview();
+      
+      // If we don't have a list of URIs to fetch, no reason to continue.
+      if (!count($feeds_batch->items)) {
+        drupal_set_message(t('Could not get feed preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
+        $context['finished'] = 1;
+        return;
+      }
+      
+      // If the number of items exceeds the specified limit, trim the items array.
+      $config = $source->getConfigFor($source->importer->parser);
+      $max = $config['fetch_limit'];
+      if ($max < count($feeds_batch->items) && $max > 0) {
+        $feeds_batch->items = array_slice($feeds_batch->items, 0, $max);
+      }
+      $feeds_batch->sample_limit = $config['sample_limit'];
+      $feeds_batch->fetch_labels = $config['fetch_labels'];
+      
+      $context['sandbox']['total'] = count($feeds_batch->items);
+      $context['sandbox']['feeds_batch'] = serialize($feeds_batch);
+    }
+    
+    $feeds_batch = isset($feeds_batch) ? $feeds_batch : unserialize($context['sandbox']['feeds_batch']);
+    
+    // For some reason the __wakeup() function is not being called
+    // when the FeedsImportBatch object gets unserialized. 
+    // So we have to give it a little kick in the ass to re-initialize ARC.
+    if (!is_object($feeds_batch->arc)) {
+      $feeds_batch->__wakeup();
+    }
+    
+    $source->importer->parser->gatherSamples($feeds_batch);
+    $remaining = count($feeds_batch->items);
+    if (!$remaining) {
+      $source->importer->parser->saveSamples($feeds_batch, $source);
+      $context['finished'] = 1;
+    }
+    
+    $context['sandbox']['feeds_batch'] = serialize($feeds_batch);
+    $context['finished'] = ($context['sandbox']['total'] - $remaining) / $context['sandbox']['total'];
+  }
+  catch (Exception $e) {
+    drupal_set_message($e->getMessage(), 'error');
+  }
+}
+
+/**
+ * Batch API "finished" callback for preview.
+ *
+ * If working with a feed node, redirect to node edit form
+ * when the preview import is complete. 
+ */
+function rdfimporter_refresh_preview_finished($success, $results, $operations) {
+  if ($success && !empty($results['feed_nid'])) {
+    drupal_goto('node/' . $results['feed_nid'] . '/edit', '', 'rdfimporter-preview');
+  }
+}
 
 /**
  * Include the ARC2 library.
  *
-  * If ARC2 is already installed with RDF module use that copy,
-  * otherwise it should be installed in rdfimporter/arc
-  * and if it's not, set a warning message 
+ * Looks in the following locations:
+ * 1. <libraries directory>/arc
+ * 2. <RDF module>/vendor/arc
+ * 3. <RDFimporter module>/arc
  */
 function rdfimporter_include_arc() {
   if (!class_exists('ARC2')) {
-    if (file_exists('./'. RDF_ARC2_PATH . '/ARC2.php')) {
-      require './'. RDF_ARC2_PATH . '/ARC2.php';
+    if (module_exists('libraries') && file_exists(libraries_get_path('arc') ."/ARC2.php")) {
+      require_once libraries_get_path('arc') .'/ARC2.php';
     }
-    else {
-      @require './'. drupal_get_path('module', 'rdfimporter') .'/arc/ARC2.php';
+    elseif (defined('RDF_ARC2_PATH') && file_exists('./' . RDF_ARC2_PATH . '/ARC2.php')) {
+      require_once './' . RDF_ARC2_PATH . '/ARC2.php';
+    }
+    elseif (file_exists(drupal_get_path('module', 'rdfimporter') . '/arc/ARC2.php')) {
+      require_once drupal_get_path('module', 'rdfimporter') . '/arc/ARC2.php';
     }
   }
   if (!class_exists('ARC2')) {
-    drupal_set_message(t('The ARC2 libraries could not be loaded. ARC2 is required for the RDF Importer module to work. The libraries should be !link and placed in a folder named "arc" inside the "rdfimporter" module folder.', array('!link' => l('downloaded', 'http://arc.semsol.org/download'))), 'warning', FALSE);
+    drupal_set_message(t('The ARC2 libraries could not be loaded. ARC2 is required for the RDFimporter module to work. The libraries should be !link and placed in a folder named "arc" inside the RDFimporter module folder.', array('!link' => l('downloaded', 'http://arc.semsol.org/download'))), 'warning', FALSE);
   }
 }
 
 /**
- * Validate a SPARQL query string
+ * Validate a SPARQL query string.
  */
 function rdfimporter_validate_sparql($query, &$errors = NULL) {
   $parser = ARC2::getSPARQLParser();
@@ -184,7 +306,7 @@ function rdfimporter_validate_sparql($query, &$errors = NULL) {
 }
 
 /**
- * Validation functions from the RDF module
+ * Validation functions from the RDF module.
  */
 function rdfimporter_validate_uri($uri) {
   return rdfimporter_is_valid_url($uri) || rdfimporter_is_valid_urn($uri);
@@ -197,4 +319,74 @@ function rdfimporter_is_valid_url($url) {
 
 function rdfimporter_is_valid_urn($urn) {
   return preg_match('/^urn:/', $urn) || preg_match('/^mailto:/', $urn); // FIXME
+}
+
+/**
+ * Theme sample data for a feed as a table
+ */
+function theme_rdfimporter_samples($samples) {
+  if (!empty($samples)) {
+    $rows = array();
+    
+    foreach ($samples as $uri => $property) {
+      $row = $items = array();
+      $row[0] = array();
+      // If the sample array has been merged with others the label may an array
+      $label = is_array($property['label']) ? $property['label'][0] : $property['label'];
+      $row[0]['data'] = '<strong class="property-label">'. $label .'</strong>';
+      $row[0]['data'] .= '<em class="property-uri">'. $uri .'</em>';
+      $row[0]['class'] = 'property';
+      
+      // Clean up the array - if it has been merged it may have duplicates
+      // $property['values'] = array_unique($property['values']);
+      // $property['values'] = array_slice($property['values'], 0, RDFIMPORTER_MAX_SAMPLES);
+      
+      // Build a list of property values
+      foreach ($property['values'] as $i => $item) {
+        $items[$i] = theme('rdfimporter_sample', $item);
+      }
+      
+      $row[1] = theme('item_list', $items);
+      $rows[] = $row;
+    }
+    
+    // Sort by property name
+    uasort($rows, 'rdfimporter_sort_table_rows');
+    $header = array(
+      '0' => array('data' => t('RDF Property'), 'class' => 'first'),
+      '1' => array('data' => t('Sample'), 'class' => 'second'),
+    );
+    
+    return theme('table', $header, $rows, array('class' => 'rdfimporter-samples'));
+  }
+  else {
+    return '';
+  }
+}
+
+/**
+ * Theme a single sample
+ */
+function theme_rdfimporter_sample($item) {
+  $sample = '';
+  
+  // Handle object properties differently
+  if ($item['type'] == 'uri') {
+    // Only output a label if it's there
+    if (!empty($item['label'])) {
+      $sample = '<p class="label">'. $item['label'] .'</p>';
+    }
+    $sample .= '<em class="uri">'. $item['value'] .'</em>';
+  }
+  else {
+    $sample = '<p class="value">'. $item['value'] .'</p>';
+  }
+  return $sample;
+}
+
+/**
+ * uasort() callback for sorting table rows by property name
+ */
+function rdfimporter_sort_table_rows($a, $b) {
+  return strcasecmp($a[0]['data'], $b[0]['data']);
 }

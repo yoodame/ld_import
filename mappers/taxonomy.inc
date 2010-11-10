@@ -28,7 +28,7 @@ function taxonomy_rdfimporter_node_processor_targets_alter(&$targets, $content_t
  * Feeds will implode tags using commas, so wrapping with double
  * quotes ensures terms with commas get handled correctly.
  */
-function taxonomy_rdfimporter_preprocess_target(&$node, $key, $property) {
+function taxonomy_rdfimporter_preprocess_target($node, $key, $property) {
   
   // Don't continue if the property is empty.
   if (empty($property)) return;
@@ -37,12 +37,22 @@ function taxonomy_rdfimporter_preprocess_target(&$node, $key, $property) {
     $property = check_plain($property);
     return ($property) ? taxonomy_feeds_set_target($node, $key, '"' . $property . '"') : NULL;
   }
-  
+
   // Load target vocabulary to check if it has the "tags" flag.
   $vocab_id = (int) str_replace('taxonomy:', '', $key);
   $vocab = taxonomy_vocabulary_load($vocab_id);
-
+  
   $terms = array();
+  
+  if (is_array($property)) {
+    foreach ($property as $value) {
+      if ($value && $vocab->tags) {
+        $terms[] = '"' . $value . '"';
+      }
+    }
+    return taxonomy_feeds_set_target($node, $key, $property);
+  }
+
   foreach ($property->getValues() as $item) {
     $value = ($item->getType() == 'uri') ? $item->getLabel() : $item->getValue();
     $value = check_plain($value);

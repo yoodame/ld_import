@@ -1,8 +1,6 @@
 <?php
 // $Id$
 
-define('RDFS_LABEL_URI', 'http://www.w3.org/2000/01/rdf-schema#label');
-
 /**
  * @file
  * Definitions for RdfImporterResource, RdfImporterIndividual, 
@@ -12,6 +10,8 @@ define('RDFS_LABEL_URI', 'http://www.w3.org/2000/01/rdf-schema#label');
  * provided by an ARC2_Resource object
  * @see ARC2_Resource
  */
+ 
+define('RDFS_LABEL_URI', 'http://www.w3.org/2000/01/rdf-schema#label');
  
 /**
  * Class definition for RdfImporterResource.
@@ -41,12 +41,16 @@ class RdfImporterResource {
     return NULL;
   }
   
-  public function getArc() {
-    return $this->arc;
+  public function setArc() {
+    rdfimporter_include_arc();
+    $this->arc = ARC2::getResource();
   }
   
-  public function setArc() {
-    $this->arc = ARC2::getResource();
+  public function clearArc($uri = '') {
+    $uri = ($uri) ? $uri : $this->uri;
+    if (isset($this->arc->index[$this->uri])) {
+      unset($this->arc->index[$this->uri]);
+    }
   }
   
   public function setEndpoint($endpoint) {
@@ -81,12 +85,15 @@ class RdfImporterResource {
   public function getPropValue($prop_uri) {
     $this->arc->setURI($this->uri);
     $items = $this->arc->getProps($prop_uri);
+    $item = reset($items);
     switch ($count = count($items)) {
       case ($count == 1):
-        return $items[0]['value'];
+        return $item['value'];
       case ($count > 1):
-        // Try to find a value in the target language, otherwise just return the first value
-        return ($filtered = $this->filterLanguage($items)) ? $filtered[0]['value'] : $items[0]['value'];
+        // Try to find a value in the target language, otherwise just return the first value.
+        $filtered = $this->filterLanguage($items);
+        $item = ($filtered) ? reset($filtered) : $item;
+        return $item['value'];
       default:
         return '';
     }
@@ -106,13 +113,13 @@ class RdfImporterResource {
 
   /**
    * If the language is specified in a set of property values, strip out any
-   * values that do not match the site language
+   * values that do not match the site language.
    *
-   * It's up to the calling function to decide what to return if nothing's left
+   * It's up to the calling function to decide what to return if nothing's left.
    *
    * The site language should be a two-letter code like: en, fr, es
    * but the value's language could have extensions like: en-US, en-UK
-   * so we try to match as a substring instead of an exact match 
+   * so we try to match as a substring instead of an exact match.
    * 
    * @param $items
    *   An array of ARC2 property values
@@ -125,7 +132,7 @@ class RdfImporterResource {
         unset($items[$uri]);
       }
     }
-    return count($items) ? $items : NULL;
+    return count($items) ? $items : array();
   }
 }
 
@@ -137,13 +144,14 @@ class RdfImporterIndividual extends RdfImporterResource {
   
   public function __construct($uri = NULL, $arc = NULL, $site_language = NULL) {
     parent::__construct($uri, $arc, $site_language);
-    // Setting the label will trigger fetching all properties
-    // $this->setLabel();
+    // Clear out any lingering triples involving this URI
+    // which resulted from previous requests
+    $this->clearArc();
   }
   
   public function getProperty($prop_uri) {
     $props = $this->getProperties();
-    return isset($props[$prop_uri]) ? $props[$prop_uri] : NULL;
+    return isset($props[$prop_uri]) ? $props[$prop_uri] : array();
   }
   
   public function getProperties() {
@@ -156,14 +164,16 @@ class RdfImporterIndividual extends RdfImporterResource {
   public function setProperties() {
     $this->arc->setURI($this->uri);
     $props = $this->arc->getProps();
-    foreach ($props as $uri => &$prop) {
-      $prop = new RdfImporterProperty($uri, $this->uri, $this->arc, $this->language);
+    if (!empty($props)) {
+      foreach ($props as $uri => &$prop) {
+        $prop = new RdfImporterProperty($uri, $this->uri, $this->arc, $this->language);
+      }
     }
     $this->properties = $props;
   }
   
   /**
-   * Grab the first value for each property to offer as a sample
+   * Grab the first value for each property and offer as a sample.
    */
   public function getSamples() {
     $samples = array();
@@ -237,5 +247,9 @@ class RdfImporterPropertyValue extends RdfImporterResource {
   
   public function getLanguage() {
     return $this->item['lang'];
+  }
+  
+  public function getContent() {
+    return ($this->getType() == 'uri') ? $this->getLabel() : $this->getValue();
   }
 }

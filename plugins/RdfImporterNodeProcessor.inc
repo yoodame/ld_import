@@ -6,8 +6,12 @@
  * Class definition of FeedsNodeProcessor.
  */
 
+// NOTE: The batch size must be greater than 1 otherwise
+// progress gets calculated incorrectly.
+define('RDFIMPORTER_NODE_BATCH_SIZE', 2);
+
 /**
- * Creates nodes from RdfImporterIndividual objects.
+ * Class definition for RdfImporterNodeProcessor.
  */
 class RdfImporterNodeProcessor extends FeedsNodeProcessor {
 
@@ -15,32 +19,56 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
    * Implementation of FeedsProcessor::process().
    */
   public function process(FeedsImportBatch $batch, FeedsSource $source) {
-    
-    // If this is a 'preview' import don't do any processing
-    if ($source->preview) return;
-    else parent::process($batch, $source);
-    
-    // Clear out the ARC index to avoid memory limit issues
-    // $batch->arc->index = array();
-  }
 
+    // We override the FEEDS_NODE_BATCH_SIZE to use by RDFIMPORTER_NODE_BATCH_SIZE
+    // temporarily setting the 'feeds_node_batch_size' variable
+    // This is a little dirty, but it works for now.
+    $original_batch_size = variable_get('feeds_node_batch_size', NULL);
+    variable_set('feeds_node_batch_size', RDFIMPORTER_NODE_BATCH_SIZE);
+    
+    parent::process($batch, $source);
+    
+    // If caching is disabled, clear out the ARC index.
+    if (!$this->config['arc_caching']) {
+      $batch->arc->index = array();
+    }
+    
+    variable_set('feeds_node_batch_size', $original_batch_size);
+  }
+  
+  /**
+   * Implementation of FeedsProcessor::clear().
+   */
+  public function clear(FeedsBatch $batch, FeedsSource $source) {
+    variable_set('feeds_node_batch_size', FEEDS_NODE_BATCH_SIZE);
+    parent::clear($batch, $source);
+  }
+  
   /**
    * Override parent::map() to load all available add-on mappers.
    */
-  protected function map($individual, $target_node) {
-    // Setting the title here, but it can be overridden by mappings
+  protected function map($batch, $target_node) {
+    $individual = $batch->currentItem();
+    // Setting a default title here, but it can be overridden by mappings
     $target_node->title = $individual->getLabel();
     // Setting the URI to act as Feeds identifier
     $target_node->feeds_node_item->url = $individual->getUri();
     parent::loadMappers();
     self::loadMappers();
-    return parent::map($individual, $target_node);
+    return parent::map($batch, $target_node);
   }
   
   /**
    * Override setTargetElement to only map title and body fields.
    */
   public function setTargetElement($target_node, $target_element, $value) {
+    if (is_object($value)) {
+      $prop = reset($value->getValues());
+      $value = (!empty($prop)) ? $prop->getContent() : '';
+    }
+    elseif (is_array($value)) {
+      $value = (!empty($value)) ? reset($value) : '';
+    }
     if ($target_element == 'body') {
       $target_node->teaser = node_teaser($value);
       $target_node->body = $value;
@@ -69,10 +97,12 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
         'description' => t('The body of the node. The teaser will be the same as the entire body.'),
       );
     }
+    // $targets = parent::getMappingTargets();
 
-    // Load mappers bundled with Feeds
+    // Load mappers bundled with Feeds.
     parent::loadMappers();
-    // Load RDFimporter mappers
+    
+    // Load RDFimporter mappers.
     self::loadMappers();
     
     // Let other modules expose mapping targets.
@@ -84,7 +114,8 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
   /**
    * Get nid of an existing feed item node if available.
    */
-  protected function existingItemId($individual, FeedsSource $source) {
+  protected function existingItemId(FeedsImportBatch $batch, FeedsSource $source) {
+    $individual = $batch->currentItem();
     $nid = db_result(db_query("SELECT nid FROM {feeds_node_item} WHERE feed_nid = %d AND id = '%s' AND url = '%s'", $source->feed_nid, $source->id, $individual->getUri()));
     return ($nid) ? $nid : 0;
   }
@@ -106,5 +137,32 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
       module_implements('', FALSE, TRUE);
     }
     $loaded = TRUE;
+  }
+  
+  /**
+   * Override parent::configDefaults().
+   */
+  public function configDefaults() {
+    $defaults = parent::configDefaults();
+    $defaults['arc_caching'] = 0;
+    return $defaults;
+  }
+  
+  /**
+   * Override parent::configForm().
+   */
+  public function configForm(&$form_state) {
+    $form = parent::configForm($form_state);
+    $form['arc_caching'] = array(
+      '#type' => 'radios',
+      '#title' => t('Cache data during import'),
+      '#description' => t('Normally RDF content will be cached as it is retrieved the server. For big imports this can cause PHP to hit memory limits or cause MySQL to hit packet size limits (the cache gets temporarily saved to the database during import). <strong>Turning off caching can make imports slower, but overall more reliable.</strong>'),
+      '#options' => array(
+        1 => 'Enabled',
+        0 => 'Disabled',
+      ),
+      '#default_value' => $this->config['arc_caching'],
+    );
+    return $form;
   }
 }
