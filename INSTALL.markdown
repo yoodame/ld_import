@@ -27,7 +27,7 @@ Installation
 
    There are a few different ways to do this...
    
-   - If you use the RDF module, or other modules that utilize ARC, it should be available for RDFimporter already.
+   - If you use the RDF module, or other modules that utilize ARC, it should be available to RDFimporter already.
    - (Using Libraries module) Unpack (or git clone) the ARC2 bundle into either "sites/all/libraries/arc" or "sites/<sitename>/libraries/arc"
    - Unpack or clone the ARC2 bundle directly into "modules/rdfimporter/arc"
 
@@ -38,7 +38,7 @@ Installation
 
 System settings
 ---------------
-RDFimporter makes a lot of HTTP requests and processes a lot of data. While it does use Drupal's Batch API to help move things along, there are still common issues.
+RDFimporter makes a lot of HTTP requests and retrieves a lot of data. While it does use Drupal's Batch API to help move things along smoothly, there are still common issues.
 
 - **PHP maximum execution time:**
   The default seems to be around 30 seconds, which is sometimes too low for even Drupal itself. This is set with "max_execution_time" in "php.ini"
@@ -56,6 +56,64 @@ Changing any these settings requires system admin privileges. If you're working 
 [tweaks]: http://drupal.org/project/drupal_tweaks
 
 
-Usage
-=====
-Coming soon...
+Basic usage
+===========
+Setting up imports involves creating *Feeds importers* using the Feeds UI (separate module packaged with Feeds).
+
+First, you need:
+
+- (If importing Linked Data) A list of Linked Data URIs
+- (If using a SPARQL endpoint) A list of URIs from an SPARQL endpoint **OR** a SPARQL SELECT query that returns a list of URIs from the endpoint
+- A content type configured with fields to store data
+
+To create your first RDF importer...
+
+1. Go to "/admin/build/feeds" and click "New importer".
+
+2. Give it a name and description.
+
+3. On the next screen you should see four sections: Basic settings, Fetcher, Parser, Processor. We'll go through these one by one...
+   
+   1. **Basic settings** 
+   
+      Click the "Settings" link
+      - *Attach to content type:* choose "Use standalone form"
+      - *Minimum refresh period:* for testing, choose "Never"
+      - *Import on submission:* leave this on when using "Use standalone form"
+      
+   2. **Fetcher**
+   
+      Change to either "RDFimporter Linked Data Fetcher" or "RDFimporter SPARQL Fetcher" depending on your data source.
+   
+   3. **Parser**
+   
+      Change to "RDFimporter Parser"
+   
+   4. **Processor**
+      
+      Change to "RDFimporter Node Processor"
+   
+   From this point you can ignore the first 3 sections because all the settings you'll be changing are in the "Processor" section.
+   
+4. Go to "Settings" under the "Processor" section.
+
+   - *Content type:* select the type of nodes you want to produce
+   - *Input format:* select the input format you want to use (only for the node's body field)
+   - *Author:* self-explanatory
+   - *Expire nodes:* this could be useful for time-sensitive data
+   - *Update existing nodes:* also self-explanatory
+   
+5. Before setting up any mappings we need to run a *preview* of the data to see properties available for mapping. Go to "/import" where you should see the importer you just created. Click on the importer. If it's not there, you probably attached the importer to a content type, which means will want to create a new node of that type. 
+
+6. Paste in your list of URIs or SPARQL query. Leave the preview options on their default settings for now (but if your URI list is huge, try setting the item limit around 20 or 50). Click "Save and Preview".
+
+7. Once the preview is finished, you should see a table full of sample data -- if you don't see any sample data, there may be a problem with the URIs or SPARQL query you entered. The properties listed here are all the RDF properties being used among the URIs provided. 
+
+8. Go to the "Edit mappings" link just above the preview table. You can also go to "/admin/build/feeds/<importer_name>/mapping".
+
+9. The mappings screen is where you define how RDF property data gets mapped to Drupal nodes. One node will be created/updated for every URI you provided. 
+
+10. When finished setting up mappings, go back to "/import" and then to your importer.
+
+11. Click the "Import" button at the bottom to start the process. When finished you should see a Drupal message telling you that nodes have been created.
+
