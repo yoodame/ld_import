@@ -13,7 +13,7 @@
  */
  
 define('RDFIMPORTER_MAX_SAMPLES', 4);
-define('RDFIMPORTER_PREVIEW_FETCH_LIMIT', 10);
+define('RDFIMPORTER_PREVIEW_FETCH_LIMIT', 0);
 
 /**
  * Class definition for RdfImporterParser.
@@ -216,8 +216,8 @@ class RdfImporterParser extends FeedsParser {
     $form['fetch_limit'] = array(
       '#type' => 'select',
       '#title' => t('Preview item limit'),
-      '#description' => t('Maximum number of URIs to fetch for previewing. Use "0" for no limit.'),
-      '#options' => drupal_map_assoc(array(0,1,2,3,4,5,10,15,20,50,100)),
+      '#description' => t('Maximum number of URIs to fetch for previewing.'),
+      '#options' => drupal_map_assoc(array('no limit',1,2,3,4,5,10,15,20,50,100)),
       '#default_value' => !empty($source_config['fetch_limit']) ? $source_config['fetch_limit'] : RDFIMPORTER_PREVIEW_FETCH_LIMIT,
     );
     $form['sample_limit'] = array(
@@ -288,7 +288,7 @@ class RdfImporterParser extends FeedsParser {
     );
     $form['warning'] = array(
       '#prefix' => '<p><em>',
-      '#value' => t('Note: Previewing often involves fetching a LOT of data and can take some time. To make things quicker, use a low item limit setting and turn labels OFF.'),
+      '#value' => t('Note: Previewing often involves fetching a LOT of data and can take some time. To make things fast, turn labels OFF and use a low item limit setting.'),
       '#suffix' => '</em></p>',
     );
     
