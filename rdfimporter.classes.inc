@@ -46,8 +46,7 @@ class RdfImporterResource {
     $this->arc = ARC2::getResource();
   }
   
-  public function clearArc($uri = '') {
-    $uri = ($uri) ? $uri : $this->uri;
+  public function clearArc() {
     if (isset($this->arc->index[$this->uri])) {
       unset($this->arc->index[$this->uri]);
     }

@@ -50,7 +50,7 @@ Links to further documentation and screencasts will be added here as they become
 
 Support
 =======
-This code is definitely a work in progress. All comments, questions and suggestions are welcome. For now, the issue queue on GitHub seems like the best place to post problems and bugs. 
+This code is definitely a work in progress is not considered stable. All comments, questions and suggestions are welcome. We would love to get feedback on various use cases and how something like this might be used. For now, the issue queue on GitHub seems like the best place to post problems and bugs. 
 
 
 Some future plans

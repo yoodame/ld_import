@@ -29,7 +29,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     parent::process($batch, $source);
     
     // If caching is disabled, clear out the ARC index.
-    if (!$this->config['arc_caching']) {
+    if (!$this->config['arc_caching'] && is_object($batch->arc)) {
       $batch->arc->index = array();
     }
     
@@ -103,11 +103,11 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     parent::loadMappers();
     
     // Load RDFimporter mappers.
-    self::loadMappers();
+    // self::loadMappers();
     
     // Let other modules expose mapping targets.
-    drupal_alter('rdfimporter_node_processor_targets', $targets, $this->config['content_type']);
-
+    drupal_alter('feeds_node_processor_targets', $targets, $this->config['content_type']);
+    
     return $targets;
   }
   

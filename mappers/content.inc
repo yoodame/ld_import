@@ -12,6 +12,7 @@
 function content_rdfimporter_node_processor_targets_alter(&$targets, $content_type) {
   $new_targets = array();
   content_feeds_node_processor_targets_alter($new_targets, $content_type);
+  dsm($content_type);
   
   // Change the callback so we can do some preprocessing
   foreach ($new_targets as &$target) {

@@ -73,6 +73,7 @@ class RdfImporterBatch extends FeedsImportBatch {
   public function shiftItem() {
     $next = array_shift($this->items);
     $this->current_item = ($next) ? new RdfImporterIndividual($next, $this->arc, $this->language) : NULL;
+    if (is_object($this->current_item)) dd('Shifting to '.$this->current_item->getUri());
     return $this->current_item;
   }
   

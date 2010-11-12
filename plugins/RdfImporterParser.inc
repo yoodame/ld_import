@@ -42,10 +42,25 @@ class RdfImporterParser extends FeedsParser {
     $samples = $this->loadSamples();
     
     foreach ($samples as $uri => $property) {
-      // When sample arrays are merged, the label can become an array instead of a string
+      // When sample arrays get merged, the label can become an array instead of a string.
       $name = is_array($property['label']) ? $property['label'][0] : $property['label'];
-      $key = serialize(array($uri));
-      $sources[$key] = array('name' => t($name), 'description' => t($uri));
+      
+      if ($item = reset($property['values'])) {
+        switch ($item['type']) {
+          case 'uri':
+          case 'bnode':
+            $key = $this->createMappingID($uri);
+            $sources[$key] = array('name' => t($name . ' (uri)'), 'description' => t($uri));
+            $key = $this->createMappingID($uri, TRUE);
+            $sources[$key] = array('name' => t($name . ' (label)'), 'description' => t($uri));
+            break;
+          case 'literal':
+          default:
+            $key = $this->createMappingID($uri);
+            $sources[$key] = array('name' => t($name), 'description' => t($uri));
+            break;
+        }
+      }
     }
 
     uasort($sources, array($this, 'sortSources'));
@@ -54,9 +69,23 @@ class RdfImporterParser extends FeedsParser {
     $sources['label'] = array('name' => t('Resource label'), 'description' => t('Single label for a resource'));
     $sources['uri'] = array('name' => t('Resource URI'), 'description' => t('URI for a resource'));
     
-    drupal_alter('feeds_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
+    drupal_alter('rdfimporter_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
+    
+    // dsm($sources);
     
     return array_reverse($sources);
+  }
+  
+  /**
+   * Create a serialized source array to represent an RDF property
+   */
+  function createMappingID($uri, $label = FALSE) {
+    if ($label) {
+      return serialize(array($uri => array(RDFS_LABEL_URI => array())));
+    }
+    else {
+      return serialize(array($uri => array()));
+    }
   }
   
   /**
@@ -68,15 +97,57 @@ class RdfImporterParser extends FeedsParser {
     if ($source == 'uri') {
       return $individual->getUri();
     }
-    if ($source == 'label') {
+    elseif ($source == 'label') {
       return $individual->getLabel();
     }
-    
-    $source = unserialize($source);
-    $source = reset($source);
-    
-    $properties = $individual->getProperties();
-    return isset($properties[$source]) ? $properties[$source] : '';
+    else {
+      $source = @unserialize($source);
+      if (is_array($source)) {
+        $items = array();
+        $this->extractPropertyValues($individual, $source, $items);
+        dd('-- Extracted property values for '.$individual->getUri());
+        // dd(array('SOURCE' => $source, 'ITEMS' => $items));
+        return $items;
+      }
+      
+    }
+    // $properties = $individual->getProperties();
+    // return isset($properties[$source]) ? $properties[$source] : '';
+  }
+  
+  /**
+   * Extract the key that identifies what type of mapping source we have.
+   */
+  // public function extractMappingType($source = '') {
+  //   $start = strpos($source, '[');
+  //   $end = strpos($source, ']');
+  //   $uri = substr($source, $end+2);
+  //   if (($start == 0) && $end && $uri) {
+  //     $type = substr($source, 1, $end-1);
+  //     return in_array($type, array('uri', 'label', 'value')) ? array($uri => $type) : array();
+  //   }
+  // }
+  
+  public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
+
+    foreach (element_children($source) as $property_uri) {
+
+      if ($property = $individual->getProperty($property_uri)) {
+
+        foreach ($property->getValues() as $item) {
+
+          // If there are deeper nested properties, continue to drill down.
+          if ($item->getType() == 'uri' && element_children($source[$property_uri])) {
+            // $target_individual = new RdfImporterIndividual($item->getValue(), $individual->arc, $individual->language);
+            $target_individual = new RdfImporterIndividual($item->getValue(), NULL, $individual->language);
+            $this->extractPropertyValues($target_individual, $source[$property_uri], $items);
+          }
+          else {
+            $items[] = $item->getValue();
+          }
+        }
+      }
+    }
   }
   
   /**
