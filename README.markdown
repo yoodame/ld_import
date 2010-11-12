@@ -4,7 +4,7 @@ RDFimporter is primarily a set of plugins for the [Feeds module][feeds] that can
 
 Most of the Drupal functionality comes from the Feeds module itself. All RDF fetching and parsing is handled by the [ARC2 RDF framework][arc2]. These are two great pieces of software.
 
-This module results from work being done at Cornell University's [Mann Library][mann] to bring content from Cornell's [VIVO database][vivo] into Drupal. We hope this code will be useful to others as RDF becomes more available on the Web. 
+This module results from work being done at Cornell University's [Mann Library][mann] to bring content from Cornell's [VIVO database][vivo] into Drupal. Our hope is that other groups and institutions will be able use this module to bring VIVO content into their Drupal sites. We also hope this code will be useful to others as RDF becomes more available on the Web.
 
 [feeds]: http://drupal.org/project/feeds
 [arc2]: http://arc.semsol.org/
@@ -50,7 +50,7 @@ Links to further documentation and screencasts will be added here as they become
 
 Support
 =======
-This code is definitely a work in progress. All comments, questions and suggestions are welcome. For now, the issue queue on GitHub seems like the best place to post problems and bugs.
+This code is definitely a work in progress. All comments, questions and suggestions are welcome. For now, the issue queue on GitHub seems like the best place to post problems and bugs. 
 
 
 Some future plans
@@ -58,6 +58,7 @@ Some future plans
 - Allow single nodes to be updated/re-imported independently.
 - Make the mapping screen much easier to use, possibly by using JavaScript-based visual mapping.
 - Come up with a way to import RDFa. ARC2 can parse it already, but the structure can be a little funny.
+- Allow advanced users to enter specific SPARQL queries that fetch only the necessary data in order to avoid fetching the massive amount of extra data that's currently being fetched.
 
 
 Other modules

@@ -41,7 +41,7 @@ System settings
 RDFimporter makes a lot of HTTP requests and retrieves a lot of data. While it does use Drupal's Batch API to help move things along smoothly, there are still common issues.
 
 - **PHP maximum execution time:**
-  The default seems to be around 30 seconds, which is sometimes too low for even Drupal itself. This is set with "max_execution_time" in "php.ini"
+  The default seems to be around 30 seconds, which is sometimes too low for even Drupal itself. This is set with "max_execution_time" in "php.ini". A good figure for development might be 180 seconds.
 
 - **PHP memory limit:**
   Unless you're importing a whole lot of data this may never be an issue, but it's something to be aware of. It is set with "memory_limit" in "php.ini"
