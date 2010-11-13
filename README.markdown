@@ -2,7 +2,7 @@ RDFimporter module
 ==================
 RDFimporter is primarily a set of plugins for the [Feeds module][feeds] that can be used to import RDF content from remote sources and map that content to Drupal nodes. It can be used for both one-time imports and periodic data imports.
 
-Most of the Drupal functionality comes from the Feeds module itself. All RDF fetching and parsing is handled by the [ARC2 RDF framework][arc2]. (These are two great pieces of software)
+Most of the Drupal functionality comes from the Feeds module itself. All RDF fetching and parsing is handled by the [ARC2 RDF framework][arc2]. (Both great pieces of software)
 
 This module is the result of work being done at Cornell University's [Mann Library][mann] to bring content from Cornell's [VIVO database][vivo] into Drupal. Our hope is that other groups and institutions will be able use this module to bring VIVO content into their Drupal sites. We also hope this code will be useful to others as RDF becomes more available on the Web.
 
