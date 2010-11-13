@@ -104,7 +104,9 @@ function rdfimporter_feeds_plugins() {
  * awareness of the active importer or feed nid.
  */
 function rdfimporter_form_alter(&$form, $form_state, $form_id) {
-  if ($form['#id'] == ('node-form' || 'feed-import-form')) {
+  if ($form['#id'] == 'node-form' || $form['#id'] == 'feeds-import-form') {
+    
+    dsm($form);
     
     // Only continue if there is a Feeds source form present
     // and our parser is being used.

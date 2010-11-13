@@ -136,7 +136,7 @@ class RdfImporterParser extends FeedsParser {
   public function saveSamples(FeedsImportBatch $batch, FeedsSource $source) {
     $config = $source->getConfig();
     $class = get_class($this);
-    $config[$class]['uri_list'] = $batch->uri_list;
+    // $config[$class]['uri_list'] = $batch->uri_list;
     $config[$class]['samples'] = $batch->samples;
     $config[$class]['last_updated'] = time();
     $source->setConfig($config);
@@ -288,10 +288,10 @@ class RdfImporterParser extends FeedsParser {
     
     // These three elements are for Feeds to use internally,
     // they are not displayed on any forms.
-    $form['uri_list'] = array(
-      '#type' => 'value',
-      '#value' => !empty($source_config['uri_list']) ? $source_config['uri_list'] : '',
-    );
+    // $form['uri_list'] = array(
+    //   '#type' => 'value',
+    //   '#value' => !empty($source_config['uri_list']) ? $source_config['uri_list'] : '',
+    // );
     $form['samples'] = array(
       '#type' => 'value',
       '#value' => !empty($source_config['samples']) ? $source_config['samples'] : '',
