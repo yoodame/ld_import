@@ -18,11 +18,11 @@
 class RdfImporterBatch extends FeedsImportBatch {
   public $uri_list;
   public $arc;
-  
-  // These 
+  public $language;
   public $samples;
   public $sample_limit;
-  public $language;
+  public $fetch_labels;
+  public $skipped;
   
   /**
    * Constructor.
@@ -34,6 +34,7 @@ class RdfImporterBatch extends FeedsImportBatch {
     $this->samples = array();
     $this->sample_limit = RDFIMPORTER_MAX_SAMPLES;
     $this->fetch_labels = FALSE;
+    $this->skipped = array();
   }
   
   /**
@@ -69,13 +70,20 @@ class RdfImporterBatch extends FeedsImportBatch {
   
   /**
    * Override FeedsImportBatch:shiftItem() to return RdfImporterIndividual objects.
+   *
+   * Fetches all properties for each individual and skips individuals without properties. 
    */
   public function shiftItem() {
     $next = array_shift($this->items);
     $this->current_item = NULL;
     if ($next) {
       $individual = new RdfImporterIndividual($next, $this->arc, $this->language);
-      $this->current_item = ($individual->getProperties()) ? $individual : NULL;
+      if ($individual->getProperties()) {
+        $this->current_item = $individual;
+      }
+      else {
+        $this->skipped[] = $individual->getUri();
+      }
     }
     return $this->current_item;
   }
