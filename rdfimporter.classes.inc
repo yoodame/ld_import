@@ -143,9 +143,6 @@ class RdfImporterIndividual extends RdfImporterResource {
   
   public function __construct($uri = NULL, $arc = NULL, $site_language = NULL) {
     parent::__construct($uri, $arc, $site_language);
-    // Clear out any lingering triples involving this URI
-    // which resulted from previous requests
-    $this->clearArc();
   }
   
   public function getProperty($prop_uri) {
@@ -191,14 +188,14 @@ class RdfImporterIndividual extends RdfImporterResource {
  * Class definition for RdfImporterProperty.
  */
 class RdfImporterProperty extends RdfImporterResource {
-  protected $individual;
+  protected $individual_uri;
   protected $values;
   
   public function __construct($property_uri, $individual_uri, $arc = NULL, $site_language = NULL) {
     parent::__construct($property_uri, $arc, $site_language);
     
     // Set the individual (subject) URI
-    $this->individual = $individual_uri;
+    $this->individual_uri = $individual_uri;
     
     // Instead of fetching a label by default, just make one from the URI
     // This can be overridden by using $this->setLabel().
@@ -207,7 +204,7 @@ class RdfImporterProperty extends RdfImporterResource {
   
   public function getValues($filter_language = TRUE) {
     if (!isset($this->values)) {
-      $values = $this->arc->getProps($this->uri, $this->individual);
+      $values = $this->arc->getProps($this->uri, $this->individual_uri);
       if ($filter_language) {
         $values = ($filtered = $this->filterLanguage($values)) ? $filtered : array();
       }
