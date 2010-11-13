@@ -117,7 +117,7 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
       // some of the preview elements and change the text.
       if ($form['#id'] == 'node-form' && !$feed_nid) {
         // unset($form['feeds']['RdfImporterParser']['preview']['warning']);
-        $form['feeds']['RdfImporterParser']['preview']['status_message']['#value'] = t('Run a preview import to see sample data for this feed. The preview is also used to show available properties on the mappings page.');
+        $form['feeds']['RdfImporterParser']['preview']['status_message']['#value'] = t('Run a preview to see sample data for this feed. The preview is also used to show available properties on the mappings page.');
         $form['feeds']['RdfImporterParser']['preview']['refresh']['#value'] = t('Save and Preview');
       }
       
@@ -159,7 +159,7 @@ function rdfimporter_refresh_preview_submit($form, &$form_state) {
   $feed_nid = ($form_state['values']['rdfimporter_feed_nid']) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
   
   if (!$importer_id) {
-    drupal_set_message(t('Feed preview was canceled because the importer ID was missing.'), 'warning');
+    drupal_set_message(t('Preview was canceled because the importer ID was missing.'), 'warning');
     return;
   }
   
@@ -167,7 +167,7 @@ function rdfimporter_refresh_preview_submit($form, &$form_state) {
     'operations' => array(
       array('rdfimporter_refresh_preview_process', array($importer_id, $feed_nid)),
       ),
-    'title' => t('Refreshing feed preview'),
+    'title' => t('Refreshing preview'),
     'init_message' => t('Fetching data...'),
     'progress_message' => t('Fetching data...'),
     'error_message' => t('Could not finish fetching data.'),
@@ -212,7 +212,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
       
       // If we don't have a list of URIs to fetch, no reason to continue.
       if (!count($feeds_batch->items)) {
-        drupal_set_message(t('Could not get feed preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
+        drupal_set_message(t('Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
         $context['finished'] = 1;
         return;
       }
@@ -262,6 +262,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
  * when the preview import is complete. 
  */
 function rdfimporter_refresh_preview_finished($success, $results, $operations) {
+  drupal_set_message(t('The preview ran successfully.'), 'status', FALSE);
   if ($success && !empty($results['feed_nid'])) {
     drupal_goto('node/' . $results['feed_nid'] . '/edit', '', 'rdfimporter-preview');
   }
