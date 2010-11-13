@@ -2,9 +2,9 @@ RDFimporter module
 ==================
 RDFimporter is primarily a set of plugins for the [Feeds module][feeds] that can be used to import RDF content from remote sources and map that content to Drupal nodes. It can be used for both one-time imports and periodic data imports.
 
-Most of the Drupal functionality comes from the Feeds module itself. All RDF fetching and parsing is handled by the [ARC2 RDF framework][arc2]. These are two great pieces of software.
+Most of the Drupal functionality comes from the Feeds module itself. All RDF fetching and parsing is handled by the [ARC2 RDF framework][arc2]. (These are two great pieces of software)
 
-This module results from work being done at Cornell University's [Mann Library][mann] to bring content from Cornell's [VIVO database][vivo] into Drupal. Our hope is that other groups and institutions will be able use this module to bring VIVO content into their Drupal sites. We also hope this code will be useful to others as RDF becomes more available on the Web.
+This module is the result of work being done at Cornell University's [Mann Library][mann] to bring content from Cornell's [VIVO database][vivo] into Drupal. Our hope is that other groups and institutions will be able use this module to bring VIVO content into their Drupal sites. We also hope this code will be useful to others as RDF becomes more available on the Web.
 
 [feeds]: http://drupal.org/project/feeds
 [arc2]: http://arc.semsol.org/
@@ -35,7 +35,7 @@ Requirements
 - **Feeds module** + dependencies
 - **ARC2 PHP library**
 
-**NOTE:** Some system settings for PHP and MySQL may also need to be changed depending on how much data is being imported. See the INSTALL file for more details.
+**NOTE:** Some system settings for PHP and MySQL may also need to be changed. See the INSTALL.markdown file for more details.
 
 
 Installation and usage
@@ -50,7 +50,11 @@ Links to further documentation and screencasts will be added here as they become
 
 Support
 =======
-This code is definitely a work in progress is not considered stable. All comments, questions and suggestions are welcome. We would love to get feedback on various use cases and how something like this might be used. For now, the issue queue on GitHub seems like the best place to post problems and bugs. 
+This code is definitely a work in progress is not considered stable. For now, the issue queue on GitHub seems like the best place to post problems and bugs.
+
+We would love some feedback on various use cases, how something like this might be used, and how it could be improved. 
+
+Contact Miles directly via GitHub or at mw542@cornell.edu
 
 
 Some future plans
