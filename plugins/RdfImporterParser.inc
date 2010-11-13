@@ -50,9 +50,9 @@ class RdfImporterParser extends FeedsParser {
           case 'uri':
           case 'bnode':
             $key = $this->createMappingID($uri);
-            $sources[$key] = array('name' => t($name . ' (uri)'), 'description' => t($uri));
+            $sources[$key] = array('name' => t($name . ' (URIs)'), 'description' => t($uri));
             $key = $this->createMappingID($uri, TRUE);
-            $sources[$key] = array('name' => t($name . ' (label)'), 'description' => t($uri));
+            $sources[$key] = array('name' => t($name . ' (labels)'), 'description' => t($uri));
             break;
           case 'literal':
           default:
@@ -93,40 +93,21 @@ class RdfImporterParser extends FeedsParser {
    */
   public function getSourceElement($batch, $source) {
     $individual = $batch->currentItem();
+    $items = array();
     
     if ($source == 'uri') {
-      return $individual->getUri();
+      $items[] = $individual->getUri();
     }
-    elseif ($source == 'label') {
-      return $individual->getLabel();
+    if ($source == 'label') {
+      $items[] = $individual->getLabel();
     }
-    else {
-      $source = @unserialize($source);
-      if (is_array($source)) {
-        $items = array();
-        $this->extractPropertyValues($individual, $source, $items);
-        dd('-- Extracted property values for '.$individual->getUri());
-        // dd(array('SOURCE' => $source, 'ITEMS' => $items));
-        return $items;
-      }
-      
+    $source = @unserialize($source);
+    if (is_array($source)) {
+      $this->extractPropertyValues($individual, $source, $items);
+      sort($items);
     }
-    // $properties = $individual->getProperties();
-    // return isset($properties[$source]) ? $properties[$source] : '';
+    return $items;
   }
-  
-  /**
-   * Extract the key that identifies what type of mapping source we have.
-   */
-  // public function extractMappingType($source = '') {
-  //   $start = strpos($source, '[');
-  //   $end = strpos($source, ']');
-  //   $uri = substr($source, $end+2);
-  //   if (($start == 0) && $end && $uri) {
-  //     $type = substr($source, 1, $end-1);
-  //     return in_array($type, array('uri', 'label', 'value')) ? array($uri => $type) : array();
-  //   }
-  // }
   
   public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
 
@@ -138,8 +119,7 @@ class RdfImporterParser extends FeedsParser {
 
           // If there are deeper nested properties, continue to drill down.
           if ($item->getType() == 'uri' && element_children($source[$property_uri])) {
-            // $target_individual = new RdfImporterIndividual($item->getValue(), $individual->arc, $individual->language);
-            $target_individual = new RdfImporterIndividual($item->getValue(), NULL, $individual->language);
+            $target_individual = new RdfImporterIndividual($item->getValue(), $individual->arc, $individual->language);
             $this->extractPropertyValues($target_individual, $source[$property_uri], $items);
           }
           else {
