@@ -106,8 +106,6 @@ function rdfimporter_feeds_plugins() {
 function rdfimporter_form_alter(&$form, $form_state, $form_id) {
   if ($form['#id'] == 'node-form' || $form['#id'] == 'feeds-import-form') {
     
-    dsm($form);
-    
     // Only continue if there is a Feeds source form present
     // and our parser is being used.
     if (isset($form['feeds']['RdfImporterParser'])) {
@@ -241,11 +239,12 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
       $feeds_batch->__wakeup();
     }
     
-    $source->importer->parser->gatherSamples($feeds_batch);
+    $saved = $source->importer->parser->gatherSamples($feeds_batch);
     $remaining = count($feeds_batch->items);
-    if (!$remaining) {
+    if (!$remaining || !$saved) {
       $source->importer->parser->saveSamples($feeds_batch, $source);
       $context['finished'] = 1;
+      return;
     }
     
     $context['sandbox']['feeds_batch'] = serialize($feeds_batch);

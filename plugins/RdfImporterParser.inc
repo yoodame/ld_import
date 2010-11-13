@@ -71,8 +71,6 @@ class RdfImporterParser extends FeedsParser {
     
     drupal_alter('rdfimporter_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
     
-    // dsm($sources);
-    
     return array_reverse($sources);
   }
   
@@ -109,6 +107,9 @@ class RdfImporterParser extends FeedsParser {
     return $items;
   }
   
+  /**
+   * Based on the mapping source, extract property values from the individual.
+   */
   public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
 
     foreach (element_children($source) as $property_uri) {
@@ -128,35 +129,6 @@ class RdfImporterParser extends FeedsParser {
         }
       }
     }
-  }
-  
-  /**
-   * Save sample data to the current $source config so it gets saved to the database.
-   */
-  public function saveSamples(FeedsImportBatch $batch, FeedsSource $source) {
-    $config = $source->getConfig();
-    $class = get_class($this);
-    // $config[$class]['uri_list'] = $batch->uri_list;
-    $config[$class]['samples'] = $batch->samples;
-    $config[$class]['last_updated'] = time();
-    $source->setConfig($config);
-    $source->save();
-  }
-  
-  /**
-   * Load samples for all feed nodes that use the current importer.
-   */
-  public function loadSamples() {
-    $samples = array();
-    $query = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = '%s'", $this->id);
-    while ($result = db_fetch_object($query)) {
-      $feed_source = feeds_source($this->id, $result->feed_nid);
-      $config = $feed_source->getConfigFor($this);
-      if (is_array($config['samples'])) {
-        $samples = array_merge_recursive($samples, $config['samples']);
-      }
-    }
-    return $samples;
   }
   
   /**
@@ -207,26 +179,64 @@ class RdfImporterParser extends FeedsParser {
         }
         
         // Reduce duplicates by using hashes as keys
-        // $key = md5(serialize($value));
+        $key = md5(serialize($value));
         
-        // $samples[$uri]['values'][$key]['type'] = $item->getType();
-        // $samples[$uri]['values'][$key]['value'] = $value;
-        // $samples[$uri]['values'][$key]['label'] = $label; 
+        $samples[$uri]['values'][$key]['type'] = $item->getType();
+        $samples[$uri]['values'][$key]['value'] = $value;
+        $samples[$uri]['values'][$key]['label'] = $label; 
         
-        $samples[$uri]['values'][] = array (
-          'type' => $item->getType(),
-          'value' => $value,
-          'label' => $label,
-        );
+        // $samples[$uri]['values'][] = array (
+        //   'type' => $item->getType(),
+        //   'value' => $value,
+        //   'label' => $label,
+        // );
         
         if (count($samples[$uri]['values']) == $max_samples) {
-          // Strip out the hash keys
-          // $samples[$uri]['values'] = $samples[$uri]['values'];
           continue;
         } 
       }
     }
-    $batch->samples = $samples;
+
+    // Samples are being saved in the source column of feeds_source,
+    // and the data type is 'text', which holds ~65k characters.    
+    // This is a dirty workaround to avoid hitting character limits.
+    if(strlen(serialize($samples)) > 60000) {
+      drupal_set_message(t('An import preview ran successfully but had to end a little prematurely due to size limitations. The sample data shown may not be complete. You can try setting a lower number of samples per property.'), 'warning', FALSE);
+      return FALSE;
+    }
+    else {
+      $batch->samples = $samples;  
+      return TRUE;
+    }
+  }
+  
+  /**
+   * Save sample data to the current $source config so it gets saved to the database.
+   */
+  public function saveSamples(FeedsImportBatch $batch, FeedsSource $source) {
+    $config = $source->getConfig();
+    $class = get_class($this);
+    // $config[$class]['uri_list'] = $batch->uri_list;
+    $config[$class]['samples'] = $batch->samples;
+    $config[$class]['last_updated'] = time();
+    $source->setConfig($config);
+    $source->save();
+  }
+  
+  /**
+   * Load samples for all feed nodes that use the current importer.
+   */
+  public function loadSamples() {
+    $samples = array();
+    $query = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = '%s'", $this->id);
+    while ($result = db_fetch_object($query)) {
+      $feed_source = feeds_source($this->id, $result->feed_nid);
+      $config = $feed_source->getConfigFor($this);
+      if (is_array($config['samples'])) {
+        $samples = array_merge_recursive($samples, $config['samples']);
+      }
+    }
+    return $samples;
   }
   
   /**
