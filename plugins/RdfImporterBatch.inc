@@ -46,12 +46,10 @@ class RdfImporterBatch extends FeedsImportBatch {
    */
   public function getRaw() {
     $individuals = array();
-    
     foreach ($this->uri_list as $uri) {
       $this->arc->resetErrors();
       $this->arc->setURI($uri);
       // $props = $this->arc->getProps();
-      
       // Only continue importing this URI if there were no errors
       // and property data was retrieved
       // if (!($errors = $this->arc->getErrors()) && !empty($props)) {

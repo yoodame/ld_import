@@ -26,7 +26,7 @@ class RdfImporterParser extends FeedsParser {
   public function parse(FeedsImportBatch $batch, FeedsSource $source) {
     $individuals = $batch->getRaw();
     // Get the current site language to limit content
-    // to that language where possible
+    // to that language where possible.
     global $language;
     $batch->language = $language->language;
     $batch->setItems($individuals);
@@ -147,7 +147,6 @@ class RdfImporterParser extends FeedsParser {
         
         if (!isset($samples[$uri])) {
           $batch->arc->setURI($uri);
-          
           // If enabled, try to get a label for each property URI, otherwise make one.
           if ($batch->fetch_labels) {
             $label = $batch->arc->getPropValue(RDFS_LABEL_URI);
@@ -156,16 +155,13 @@ class RdfImporterParser extends FeedsParser {
           else {
             $label = $batch->arc->extractTermLabel($uri);
           }
-          
           $samples[$uri] = array();
           $samples[$uri]['label'] = $label;
           $samples[$uri]['values'] = array();
         }
         
-        $label = '';
-        $value = '';
-        
         // Fetch a label for object properties only if enabled.
+        $label = '';
         if ($item->getType() == 'uri') {
           if ($batch->fetch_labels) {
             $label = $item->getLabel();
@@ -180,17 +176,11 @@ class RdfImporterParser extends FeedsParser {
         
         // Reduce duplicates by using hashes as keys
         $key = md5(serialize($value));
-        
         $samples[$uri]['values'][$key]['type'] = $item->getType();
         $samples[$uri]['values'][$key]['value'] = $value;
         $samples[$uri]['values'][$key]['label'] = $label; 
-        
-        // $samples[$uri]['values'][] = array (
-        //   'type' => $item->getType(),
-        //   'value' => $value,
-        //   'label' => $label,
-        // );
-        
+
+        // If we hit the sample limit, move on to next property.
         if (count($samples[$uri]['values']) == $max_samples) {
           continue;
         } 
@@ -242,7 +232,7 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Helper function to keep sample data short.
    *
-   * @todo Use views_trim_text() here
+   * @todo Use views_trim_text() here?
    */
   public function trimSample($string, $max = 80, $delimeter = '...') { 
     
@@ -296,12 +286,6 @@ class RdfImporterParser extends FeedsParser {
       '#default_value' => !empty($source_config['fetch_labels']) ? $source_config['fetch_labels'] : 0,
     );
     
-    // These three elements are for Feeds to use internally,
-    // they are not displayed on any forms.
-    // $form['uri_list'] = array(
-    //   '#type' => 'value',
-    //   '#value' => !empty($source_config['uri_list']) ? $source_config['uri_list'] : '',
-    // );
     $form['samples'] = array(
       '#type' => 'value',
       '#value' => !empty($source_config['samples']) ? $source_config['samples'] : '',
@@ -353,16 +337,6 @@ class RdfImporterParser extends FeedsParser {
       '#suffix' => '</em></p>',
     );
     
-    // if ($samples) {
-    //   $form['preview']['uri_list_display'] = array(
-    //     '#type' => 'fieldset',
-    //     '#title' => t('URIs'),
-    //     '#description' => t('URIs that successfully returned data'),
-    //     '#value' => theme_item_list($source_config['uri_list'], NULL, 'ol'),
-    //     '#collapsible' => TRUE,
-    //     '#collapsed' => TRUE,
-    //   );
-    // }
     return $form;
   }
   
