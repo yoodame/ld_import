@@ -39,10 +39,10 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
   /**
    * Implementation of FeedsProcessor::clear().
    */
-  public function clear(FeedsBatch $batch, FeedsSource $source) {
-    variable_set('feeds_node_batch_size', FEEDS_NODE_BATCH_SIZE);
-    parent::clear($batch, $source);
-  }
+  // public function clear(FeedsBatch $batch, FeedsSource $source) {
+  //   variable_set('feeds_node_batch_size', FEEDS_NODE_BATCH_SIZE);
+  //   parent::clear($batch, $source);
+  // }
   
   /**
    * Override parent::map() to load all available add-on mappers.
@@ -61,11 +61,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
    * Override setTargetElement to only map title and body fields.
    */
   public function setTargetElement($target_node, $target_element, $value) {
-    if (is_object($value)) {
-      $prop = reset($value->getValues());
-      $value = (!empty($prop)) ? $prop->getContent() : '';
-    }
-    elseif (is_array($value)) {
+    if (is_array($value)) {
       $value = (!empty($value)) ? reset($value) : '';
     }
     if ($target_element == 'body') {
