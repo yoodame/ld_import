@@ -54,7 +54,6 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     // Setting the URI to act as Feeds identifier
     $target_node->feeds_node_item->url = $individual->getUri();
     parent::loadMappers();
-    self::loadMappers();
     return parent::map($batch, $target_node);
   }
   
@@ -97,16 +96,12 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
         'description' => t('The body of the node. The teaser will be the same as the entire body.'),
       );
     }
-    // $targets = parent::getMappingTargets();
-
     // Load mappers bundled with Feeds.
     parent::loadMappers();
     
-    // Load RDFimporter mappers.
-    // self::loadMappers();
-    
     // Let other modules expose mapping targets.
     drupal_alter('feeds_node_processor_targets', $targets, $this->config['content_type']);
+    drupal_alter('rdfimporter_node_processor_targets', $targets, $this->config['content_type']);
     
     return $targets;
   }
