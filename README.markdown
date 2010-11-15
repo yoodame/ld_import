@@ -1,6 +1,6 @@
 RDFimporter module
 ==================
-RDFimporter is primarily a set of plugins for the [Feeds module][feeds] that can be used to import RDF content from remote sources and map that content to Drupal nodes. It can be used for both one-time imports and periodic data imports.
+RDFimporter is primarily a set of plugins for the [Feeds module][feeds] that can be used to import remote RDF resources and map their content to Drupal nodes. It can be used for both one-time imports and periodic data imports.
 
 Most of the Drupal functionality comes from the Feeds module itself. All RDF fetching and parsing is handled by the [ARC2 RDF framework][arc2]. (Both great pieces of software)
 
