@@ -65,12 +65,29 @@ class RdfImporterBatch extends FeedsImportBatch {
         break;
       }
       else {
-        $this->skipped[$uri] = $individual->arc->getErrors();
+        $this->logErrors($uri, $individual->arc->getErrors());
       }
     }
     return $this->current_item;
   }
   
+  /**
+   * If a URI can't be fetched add it to the log and set a message.
+   *
+   * @todo It would be nice to consolidate this at the end of an import.
+   */
+  public function logErrors($uri, $errors = array()) {
+    if (!empty($errors)) {
+      $message = t('The remote resource @uri was not imported. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
+      drupal_set_message($message, 'status');
+      watchdog('rdfimporter', $message);
+    }
+    else {
+      $message = t('The remote resource @uri was not imported. No data was returned.', array('@uri' => $uri));
+      drupal_set_message($message, 'status');
+      watchdog('rdfimporter', $message);
+    }
+  }
   
   
   /**
