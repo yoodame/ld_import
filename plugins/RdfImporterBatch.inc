@@ -5,7 +5,7 @@
  * @file
  * Home of the RdfImporterBatch.
  *
- * Troughout the processing stage, a single ARC_Resource object
+ * Throughout the processing stage, a single ARC_Resource object
  * gets passed around. This object handles all HTTP requests for
  * remote data and caches all the data it fetches. By passing around
  * this single instance, we can share all previously
@@ -75,13 +75,13 @@ class RdfImporterBatch extends FeedsImportBatch {
     $next = array_shift($this->items);
     $this->current_item = NULL;
     if ($next) {
-      $individual = new RdfImporterIndividual($next, $this->arc, $this->language);
-      if ($individual->getProperties()) {
-        $this->current_item = $individual;
-      }
-      else {
-        $this->skipped[] = $individual->getUri();
-      }
+      $this->current_item = new RdfImporterIndividual($next, $this->arc, $this->language);
+      // if ($individual->getProperties()) {
+      //   $this->current_item = $individual;
+      // }
+      // else {
+      //   $this->skipped[] = $individual->getUri();
+      // }
     }
     return $this->current_item;
   }
