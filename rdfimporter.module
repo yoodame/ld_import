@@ -15,6 +15,7 @@ function rdfimporter_menu() {
     'title' => 'Testing Area',
     'page callback' => 'rdfimporter_test_page',
     'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
     'file' => 'rdfimporter.test.inc',
   );
   return $items;
