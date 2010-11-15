@@ -150,6 +150,13 @@ class RdfImporterIndividual extends RdfImporterResource {
     return isset($props[$prop_uri]) ? $props[$prop_uri] : array();
   }
   
+  public function hasProperties() {
+    if (!isset($this->properties)) {
+      $this->setProperties();
+    }
+    return count($this->properties) ? TRUE : FALSE;
+  }
+  
   public function getProperties() {
     if (!isset($this->properties)) {
       $this->setProperties();

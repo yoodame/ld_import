@@ -22,7 +22,6 @@ class RdfImporterBatch extends FeedsImportBatch {
   public $samples;
   public $sample_limit;
   public $fetch_labels;
-  public $skipped;
   
   /**
    * Constructor.
@@ -34,7 +33,6 @@ class RdfImporterBatch extends FeedsImportBatch {
     $this->samples = array();
     $this->sample_limit = RDFIMPORTER_MAX_SAMPLES;
     $this->fetch_labels = FALSE;
-    $this->skipped = array();
   }
   
   /**
@@ -47,21 +45,7 @@ class RdfImporterBatch extends FeedsImportBatch {
   public function getRaw() {
     $individuals = array();
     foreach ($this->uri_list as $uri) {
-      $this->arc->resetErrors();
-      $this->arc->setURI($uri);
-      // $props = $this->arc->getProps();
-      // Only continue importing this URI if there were no errors
-      // and property data was retrieved
-      // if (!($errors = $this->arc->getErrors()) && !empty($props)) {
-      if (!($errors = $this->arc->getErrors())) {
-        $individuals[$uri] = $uri;
-      }
-      // elseif (!$errors && empty($props)) {
-      //   watchdog('rdfimporter', 'The remote resource @uri could not be fetched. No data was returned.', array('@uri' => $uri));
-      // }
-      // else {
-      //   watchdog('rdfimporter', 'The remote resource @uri could not be fetched. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
-      // }
+      $individuals[$uri] = $uri;
     }
     return $individuals;
   }
@@ -69,22 +53,25 @@ class RdfImporterBatch extends FeedsImportBatch {
   /**
    * Override FeedsImportBatch:shiftItem() to return RdfImporterIndividual objects.
    *
-   * Fetches all properties for each individual and skips individuals without properties. 
+   * Triggers data fetching and only returns an individual if it has properties.
    */
   public function shiftItem() {
-    $next = array_shift($this->items);
     $this->current_item = NULL;
-    if ($next) {
-      $this->current_item = new RdfImporterIndividual($next, $this->arc, $this->language);
-      // if ($individual->getProperties()) {
-      //   $this->current_item = $individual;
-      // }
-      // else {
-      //   $this->skipped[] = $individual->getUri();
-      // }
+    while ($uri = array_shift($this->items)) {
+      $individual = new RdfImporterIndividual($uri, $this->arc, $this->language);
+      $individual->arc->resetErrors();
+      if ($individual->hasProperties()) {
+        $this->current_item = $individual;
+        break;
+      }
+      else {
+        $this->skipped[$uri] = $individual->arc->getErrors();
+      }
     }
     return $this->current_item;
   }
+  
+  
   
   /**
    * Make sure required ARC libraries are included after unserialize()
