@@ -31,6 +31,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     // If caching is disabled, clear out the ARC index.
     if (!$this->config['arc_caching'] && is_object($batch->arc)) {
       $batch->arc->index = array();
+      $batch->arc->fetched = array();
     }
     
     variable_set('feeds_node_batch_size', $original_batch_size);
@@ -135,7 +136,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
    */
   public function configDefaults() {
     $defaults = parent::configDefaults();
-    $defaults['arc_caching'] = 0;
+    $defaults['arc_caching'] = 1;
     return $defaults;
   }
   
