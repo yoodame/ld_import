@@ -140,6 +140,10 @@ class RdfImporterParser extends FeedsParser {
     
     $individual = $batch->shiftItem();
     
+    if(!is_object($individual)) {
+      return;
+    }
+    
     foreach ($individual->getSamples() as $uri => $item) {
       
       // Only add samples for this property if it hasn't been saved yet or we still need more values
