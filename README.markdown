@@ -45,16 +45,22 @@ See "INSTALL.markdown" for an overview of how to configure and use the module.
 
 Documentation
 =============
+- Screencast #1: [Installing the module + requirements][screencast1]
+- Screencast #2: [Basic usage, importing Linked Data from VIVO][screencast2]
+
 Links to further documentation and screencasts will be added here as they become available.
+
+[screencast1]: http://vimeo.com/16965880
+[screencast2]: http://vimeo.com/16990421
 
 
 Support
 =======
-This code is definitely a work in progress is not considered stable. For now, the issue queue on GitHub seems like the best place to post problems and bugs.
+This code is definitely a work in progress is not stable. For now, the issue queue on GitHub seems like the best place to post problems and bugs.
 
 We would love some feedback on various use cases, how something like this might be used, and how it could be improved. 
 
-Contact Miles directly via GitHub or at mw542@cornell.edu
+Contact Miles via GitHub or directly at mw542@cornell.edu
 
 
 Some future plans
