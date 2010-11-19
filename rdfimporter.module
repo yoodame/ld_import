@@ -145,15 +145,16 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
   }
   if ($form_id == 'feeds_ui_mapping_form' && (get_class($form['#importer']->parser) == 'RdfImporterParser')) {
     drupal_add_css(drupal_get_path('module', 'rdfimporter') . '/rdfimporter.css');
-    $samples = $form['#importer']->parser->loadSamples();
-    $fieldset = array(
-      '#type' => 'fieldset',
-      '#title' => t('Preview'),
-      '#value' => theme('rdfimporter_samples', $samples),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['legendset']['#suffix'] = drupal_render($fieldset);
+    if($samples = $form['#importer']->parser->loadSamples()) {
+      $fieldset = array(
+        '#type' => 'fieldset',
+        '#title' => t('Preview'),
+        '#value' => theme('rdfimporter_samples', $samples),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['legendset']['#suffix'] = drupal_render($fieldset);
+    }
   }
 }
 
@@ -258,7 +259,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
     if (!$remaining || !$saved) {
       // Do not overwrite existing samples if nothing was retrieved this time.
       if (!empty($feeds_batch->samples)) {
-        drupal_set_message(t('The preview ran successfully.'), 'status', FALSE);
+        drupal_set_message(t('The preview finished successfully.'), 'status', FALSE);
         $source->importer->parser->saveSamples($feeds_batch, $source);
       }
       $context['finished'] = 1;
