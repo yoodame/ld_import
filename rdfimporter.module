@@ -255,7 +255,10 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
     $saved = $source->importer->parser->gatherSamples($feeds_batch);
     $remaining = count($feeds_batch->items);
     if (!$remaining || !$saved) {
-      $source->importer->parser->saveSamples($feeds_batch, $source);
+      // Do not overwrite existing samples if nothing was retrieved this time.
+      if (!empty($feeds_batch->samples)) {
+        $source->importer->parser->saveSamples($feeds_batch, $source);
+      }
       $context['finished'] = 1;
       return;
     }
