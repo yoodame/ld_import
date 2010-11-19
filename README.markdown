@@ -45,9 +45,13 @@ See "INSTALL.markdown" for an overview of how to configure and use the module.
 
 Documentation
 =============
-For now, all documentation and screencasts are being posted at:
+- Screencast #1: [Installing the module + requirements][screencast1]
+- Screencast #2: [Basic usage, importing Linked Data from VIVO][screencast2]
 
-http://rdfimporter.tumblr.com
+Links to further documentation and screencasts will be added here as they become available.
+
+[screencast1]: http://vimeo.com/16965880
+[screencast2]: http://vimeo.com/16990421
 
 
 Support
