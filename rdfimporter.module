@@ -254,9 +254,11 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
     
     $saved = $source->importer->parser->gatherSamples($feeds_batch);
     $remaining = count($feeds_batch->items);
+    
     if (!$remaining || !$saved) {
       // Do not overwrite existing samples if nothing was retrieved this time.
       if (!empty($feeds_batch->samples)) {
+        drupal_set_message(t('The preview ran successfully.'), 'status', FALSE);
         $source->importer->parser->saveSamples($feeds_batch, $source);
       }
       $context['finished'] = 1;
@@ -278,7 +280,6 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
  * when the preview import is complete. 
  */
 function rdfimporter_refresh_preview_finished($success, $results, $operations) {
-  drupal_set_message(t('The preview ran successfully.'), 'status', FALSE);
   if ($success && !empty($results['feed_nid'])) {
     drupal_goto('node/' . $results['feed_nid'] . '/edit', '', 'rdfimporter-preview');
   }
