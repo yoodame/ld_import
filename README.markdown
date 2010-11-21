@@ -73,7 +73,7 @@ Some future plans
 
 Other modules
 =============
-There are some great modules available that provide similar functionality, including [SPARQL Views][sparql_views] and [Linked Data][linked_data]. Compared to those modules, RDFimporter does things quite lazily. It requires very little familiarity with RDF or SPARQL, but this ultimately makes it inefficient in many cases. If the data you're after is available from a SPARQL endpoint and you can write SPARQL queries, you might be better off with something like [SPARQL Views + Feeds View Parser][sparql_views_screencasts].
+There are some great modules available that provide similar functionality, including [SPARQL Views][sparql_views] and [Linked Data][linked_data]. One major difference is that RDFimporter can work without a SPARQL endpoint if RDF is available via Linked Data. However, compared to those modules, RDFimporter does things quite lazily. It requires far less familiarity with RDF or SPARQL, but this ultimately makes it inefficient in some cases. If the data you're after is available from a SPARQL endpoint and you can write SPARQL queries, you might be better off with something like [SPARQL Views + Feeds View Parser][sparql_views_screencasts].
 
 [sparql_views]: http://drupal.org/project/sparql_views
 [linked_data]: http://drupal.org/project/linked_data
