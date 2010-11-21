@@ -91,20 +91,23 @@ class RdfImporterParser extends FeedsParser {
    */
   public function getSourceElement($batch, $source) {
     $individual = $batch->currentItem();
-    $items = array();
     
     if ($source == 'uri') {
-      $items[] = $individual->getUri();
+      return $individual->getUri();
     }
     if ($source == 'label') {
-      $items[] = $individual->getLabel();
+      return $individual->getLabel();
     }
+    
+    $items = array();
     $source = @unserialize($source);
     if (is_array($source)) {
       $this->extractPropertyValues($individual, $source, $items);
       sort($items);
     }
-    return $items;
+    
+    // If there is only a single value, return only the value instead of an array.
+    return (count($items) > 1) ? $items : reset($items);
   }
   
   /**
@@ -272,7 +275,7 @@ class RdfImporterParser extends FeedsParser {
       '#type' => 'select',
       '#title' => t('Preview item limit'),
       '#description' => t('Maximum number of URIs to fetch for previewing.'),
-      '#options' => drupal_map_assoc(array('no limit',1,2,3,4,5,10,15,20,50,100)),
+      '#options' => drupal_map_assoc(array(t('No limit'),1,2,3,4,5,10,15,20,50,100)),
       '#default_value' => !empty($source_config['fetch_limit']) ? $source_config['fetch_limit'] : RDFIMPORTER_PREVIEW_FETCH_LIMIT,
     );
     $form['sample_limit'] = array(
