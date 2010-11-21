@@ -209,18 +209,29 @@ class RdfImporterProperty extends RdfImporterResource {
     $this->label = $this->arc->extractTermLabel($this->uri);
   }
   
+  public function getValue($filter_language = TRUE) {
+    if (!isset($this->values)) {
+      $this->setValues($filter_language);
+    }
+    return reset($this->values);
+  }
+  
   public function getValues($filter_language = TRUE) {
     if (!isset($this->values)) {
-      $values = $this->arc->getProps($this->uri, $this->individual_uri);
-      if ($filter_language) {
-        $values = ($filtered = $this->filterLanguage($values)) ? $filtered : array();
-      }
-      foreach ($values as $uri => $value) {
-        $values[$uri] = new RdfImporterPropertyValue($value, $this->arc, $this->language);
-      }
-      $this->values = $values;
+      $this->setValues($filter_language);
     }
     return $this->values;
+  }
+  
+  public function setValues($filter_language = TRUE) {
+    $values = $this->arc->getProps($this->uri, $this->individual_uri);
+    if ($filter_language) {
+      $values = ($filtered = $this->filterLanguage($values)) ? $filtered : array();
+    }
+    foreach ($values as $uri => $value) {
+      $values[$uri] = new RdfImporterPropertyValue($value, $this->arc, $this->language);
+    }
+    $this->values = $values;
   }
 }
 
