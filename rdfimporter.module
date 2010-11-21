@@ -182,7 +182,7 @@ function rdfimporter_refresh_preview_submit($form, &$form_state) {
       array('rdfimporter_refresh_preview_process', array($importer_id, $feed_nid)),
       ),
     'title' => t('Refreshing preview'),
-    'init_message' => t('Fetching data...'),
+    'init_message' => t('Initializing...'),
     'progress_message' => t('Fetching data...'),
     'error_message' => t('Could not finish fetching data.'),
     'finished' => 'rdfimporter_refresh_preview_finished'

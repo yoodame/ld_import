@@ -77,6 +77,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       '#default_value' => isset($source_config['endpoint']) ? $source_config['endpoint'] : '',
       '#maxlength' => NULL,
       '#required' => TRUE,
+      '#size' => 100,
     );
     $form['query'] = array(
       '#type' => 'textarea',
