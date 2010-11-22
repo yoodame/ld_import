@@ -225,7 +225,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
       $feeds_batch = $source->preview();
       
       // If we don't have a list of URIs to fetch, no reason to continue.
-      if (!count($feeds_batch->items)) {
+      if (!$feeds_batch->getItemCount()) {
         drupal_set_message(t('Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
         $context['finished'] = 1;
         return;
@@ -234,13 +234,13 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
       // If the number of items exceeds the specified limit, trim the items array.
       $config = $source->getConfigFor($source->importer->parser);
       $max = $config['fetch_limit'];
-      if ($max < count($feeds_batch->items) && $max > 0) {
+      if ($max < $feeds_batch->getItemCount() && $max > 0) {
         $feeds_batch->items = array_slice($feeds_batch->items, 0, $max);
       }
       $feeds_batch->sample_limit = $config['sample_limit'];
       $feeds_batch->fetch_labels = $config['fetch_labels'];
       
-      $context['sandbox']['total'] = count($feeds_batch->items);
+      $context['sandbox']['total'] = $feeds_batch->getItemCount();
       $context['sandbox']['feeds_batch'] = serialize($feeds_batch);
     }
     
@@ -254,7 +254,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
     }
     
     $saved = $source->importer->parser->gatherSamples($feeds_batch);
-    $remaining = count($feeds_batch->items);
+    $remaining = $feeds_batch->getItemCount();
     
     if (!$remaining || !$saved) {
       // Do not overwrite existing samples if nothing was retrieved this time.
