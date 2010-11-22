@@ -173,7 +173,7 @@ function rdfimporter_refresh_preview_submit($form, &$form_state) {
   $feed_nid = ($form_state['values']['rdfimporter_feed_nid']) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
   
   if (!$importer_id) {
-    drupal_set_message(t('Preview was canceled because the importer ID was missing.'), 'warning');
+    drupal_set_message(t('RDFimporter: Preview was canceled because the importer ID was missing.'), 'warning');
     return;
   }
   
@@ -222,11 +222,15 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
     // The object has to be serialized/unserialized by hand otherwise
     // it will not re-initialize correctly.
     if (!isset($context['sandbox']['feeds_batch'])) {
+      // Can't use $source->preview() here because it will unset the $batch
+      // and lead to __destruct() being called.
       $feeds_batch = $source->preview();
+      // $feeds_batch = $source->importer->fetcher->fetch($source);
+      // $source->importer->parser->parse($feeds_batch, $source);
       
       // If we don't have a list of URIs to fetch, no reason to continue.
       if (!$feeds_batch->getItemCount()) {
-        drupal_set_message(t('Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
+        drupal_set_message(t('RDFimporter: Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
         $context['finished'] = 1;
         return;
       }
@@ -259,9 +263,10 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
     if (!$remaining || !$saved) {
       // Do not overwrite existing samples if nothing was retrieved this time.
       if (!empty($feeds_batch->samples)) {
-        drupal_set_message(t('The preview finished successfully.'), 'status', FALSE);
+        drupal_set_message(t('RDFimporter: The preview finished successfully.'), 'status', FALSE);
         $source->importer->parser->saveSamples($feeds_batch, $source);
       }
+      file_delete($feeds_batch->temp_file);
       $context['finished'] = 1;
       return;
     }
@@ -270,7 +275,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
     $context['finished'] = ($context['sandbox']['total'] - $remaining) / $context['sandbox']['total'];
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    drupal_set_message('RDFimporter: ' . $e->getMessage(), 'error');
   }
 }
 
@@ -307,7 +312,7 @@ function rdfimporter_include_arc() {
     }
   }
   if (!class_exists('ARC2')) {
-    drupal_set_message(t('The ARC2 library could not be loaded. ARC2 is required for the RDFimporter module to work. Check the INSTALL file inside the rdfimporter module folder to find out how ARC can be installed.'), 'warning', FALSE);
+    drupal_set_message(t('RDFimporter: The ARC2 library could not be loaded. ARC2 is required for this module to work. Check the INSTALL file inside the rdfimporter module folder to find out how ARC can be installed.'), 'warning', FALSE);
   }
 }
 

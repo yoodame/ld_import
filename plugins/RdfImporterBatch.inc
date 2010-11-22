@@ -88,45 +88,41 @@ class RdfImporterBatch extends FeedsImportBatch {
    */
   public function logErrors($uri, $errors = array()) {
     if (!empty($errors)) {
-      $message = t('The remote resource @uri was not imported. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
+      $message = t('RDFimporter: The remote resource @uri was not imported. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
       drupal_set_message($message, 'status');
       // watchdog('rdfimporter', $message);
     }
     else {
-      $message = t('The remote resource @uri was not imported. No data was returned.', array('@uri' => $uri));
+      $message = t('RDFimporter: The remote resource @uri was not imported. No data was returned.', array('@uri' => $uri));
       drupal_set_message($message, 'status');
       // watchdog('rdfimporter', $message);
     }
   }
   
   public function createTempFile() {
+    // dd('---- Creating temp file');
     if (!file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE)) {
-      throw new Exception(t('RDFimporter could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'));
+      throw new Exception(t('RDFimporter: Could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'));
     }
   }
   
-  public function deleteTempFile() {
-    file_delete($this->temp_file);
-  }
   
-  public function loadArc() {
+  public function loadArc() {;
+    // dd('---- Loading ARC');
     $arc = @unserialize(file_get_contents($this->temp_file));
     if (is_object($arc)) {
       $this->arc = $arc;
     }
     else {
-      throw new Exception(t('RDFimporter encountered a problem loading data from the filesystem.'));
+      throw new Exception(t('RDFimporter: Encountered a problem loading data from the filesystem.'));
     }
   }
   
   public function saveArc() {;
+    // dd('---- Saving ARC');
     file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE);
+    unset($this->arc);
   }
-  
-
-  
-
-  
   
   /**
    * Make sure required ARC libraries are included after unserialize()
@@ -138,7 +134,6 @@ class RdfImporterBatch extends FeedsImportBatch {
    */
   function __sleep() {
     $this->saveArc();
-    unset($this->arc);
     return array_keys(get_object_vars($this));
   }
   
@@ -149,10 +144,6 @@ class RdfImporterBatch extends FeedsImportBatch {
     ARC2::getResource();
     ARC2::getRemoteStore();
     $this->loadArc();
-  }
-  
-  function __destruct() {
-    $this->deleteTempFile();
   }
 }
 

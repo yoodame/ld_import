@@ -198,7 +198,7 @@ class RdfImporterParser extends FeedsParser {
     // and the data type is 'text', which holds ~65k characters.    
     // This is a dirty workaround to avoid hitting character limits.
     if(strlen(serialize($samples)) > 60000) {
-      drupal_set_message(t('The import preview ran successfully but had to end a little prematurely due to size limitations. The sample data shown may not be complete. You can try setting a lower number of samples per property.'), 'warning', FALSE);
+      drupal_set_message(t('RDFimporter: The import preview ran successfully but had to end a little prematurely due to size limitations. The sample data shown may not be complete. You can try setting a lower number of samples per property.'), 'warning', FALSE);
       return FALSE;
     }
     else {

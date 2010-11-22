@@ -23,8 +23,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     // We override the FEEDS_NODE_BATCH_SIZE to use by RDFIMPORTER_NODE_BATCH_SIZE
     // temporarily setting the 'feeds_node_batch_size' variable
     // This is a little dirty, but it works for now.
-    $original_batch_size = variable_get('feeds_node_batch_size', NULL);
-    variable_set('feeds_node_batch_size', RDFIMPORTER_NODE_BATCH_SIZE);
+    variable_set('feeds_node_batch_size', $this->config['batch_size']);
     
     parent::process($batch, $source);
     
@@ -34,7 +33,11 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
       $batch->arc->fetched = array();
     }
     
-    variable_set('feeds_node_batch_size', $original_batch_size);
+    variable_set('feeds_node_batch_size', NULL);
+    
+    if (!$batch->getItemCount()) {
+      file_delete($batch->temp_file);
+    }
   }
   
   /**
@@ -137,6 +140,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
   public function configDefaults() {
     $defaults = parent::configDefaults();
     $defaults['arc_caching'] = 1;
+    $defaults['batch_size'] = RDFIMPORTER_NODE_BATCH_SIZE;
     return $defaults;
   }
   
@@ -148,12 +152,19 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     $form['arc_caching'] = array(
       '#type' => 'radios',
       '#title' => t('Cache data during import'),
-      '#description' => t('Normally RDF content will be cached as it is retrieved the server. For big imports this can cause PHP to hit memory limits or cause MySQL to hit packet size limits (the cache gets temporarily saved to the database during import). <strong>Turning off caching can make imports slower, but overall more reliable.</strong>'),
+      '#description' => t('Normally RDF content will be cached as it is retrieved the server. For large imports this can cause PHP to hit memory limits. <strong>Turning off caching can make imports slower, but overall more reliable.</strong>'),
       '#options' => array(
         1 => 'Enabled',
         0 => 'Disabled',
       ),
       '#default_value' => $this->config['arc_caching'],
+    );
+    $form['batch_size'] = array(
+      '#type' => 'select',
+      '#title' => t('Batch size'),
+      '#description' => t('Number of URIs to fetch and process into nodes at a time (using Batch API). Setting this higher can make large imports faster, but can lead to PHP timeouts depending on your max_execution_time setting.'),
+      '#options' => drupal_map_assoc(array('2 (default)',3,4,5,6,7,8,9,10,15,20,30,40,50)),
+      '#default_value' => $this->config['batch_size'],
     );
     return $form;
   }
