@@ -23,6 +23,9 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     $endpoint = array('remote_store_endpoint' => $source_config['endpoint']);
     $arc = ARC2::getResource();
     $arc->setStore(ARC2::getRemoteStore($endpoint));
+    if (!empty($source_config['data_query'])) {
+      $this->getSourceData($source_config['data_query'], $arc);
+    }
     return new RdfImporterBatch($this->getURIs($source_config), $arc);
   }
   
@@ -46,9 +49,9 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     }
 
     // Run the user-provided SPARQL query to extract URIs.
-    if (!empty($source_config['query'])) {
+    if (!empty($source_config['list_query'])) {
       $endpoint = ARC2::getRemoteStore(array('remote_store_endpoint' => $source_config['endpoint']));
-      $results = $endpoint->query($source_config['query'], 'rows');
+      $results = $endpoint->query($source_config['list_query'], 'rows');
       
       // Loop through the results and extract every value that's a URI.
       foreach ($results as $row) {
@@ -60,6 +63,17 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       }
     }
     return array_values($uri_list);
+  }
+  
+  public function getSourceData($query, $arc) {
+    $index = $arc->store->query($query, 'raw');
+    if (count($index) > 1) {
+      $arc->index = ARC2::getMergedIndex($index);
+      $arc->fetched = array_keys($index);
+    }
+    else {
+      throw new Exception(t('RDFimporter: Could not retrieve any data using the provided data query.'));
+    }
   }
   
   /**
@@ -79,20 +93,33 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       '#required' => TRUE,
       '#size' => 100,
     );
-    $form['query'] = array(
+    $form['list_query'] = array(
       '#type' => 'textarea',
       '#title' => t('SPARQL query'),
       '#description' => t('Enter a SELECT query that returns URIs. Every returned URI will be imported.'),
-      '#default_value' => isset($source_config['query']) ? $source_config['query'] : '',
-      '#rows' => 8,
+      '#default_value' => isset($source_config['list_query']) ? $source_config['list_query'] : '',
+      '#rows' => 6,
       '#required' => FALSE,
+    );
+    $form['divider'] = array(
+      '#prefix' => '<p>',
+      '#value' => t('or...'),
+      '#suffix' => '<p>',
     );
     $form['list'] = array(
       '#type' => 'textarea',
       '#title' => t('URI list'),
       '#description' => t('Enter a list of URIs to be imported from the endpoint. Place each URI on a separate line.'),
       '#default_value' => isset($source_config['list']) ? $source_config['list'] : '',
-      '#rows' => 8,
+      '#rows' => 6,
+      '#required' => FALSE,
+    );
+    $form['data_query'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Data query (optional)'),
+      '#description' => t('Enter a CONSTRUCT query that returns a graph of all content required for this import. This can make imports more efficient and can make large imports much, much faster. Be sure to set a large batch size under Processor -> Settings.'),
+      '#default_value' => isset($source_config['data_query']) ? $source_config['data_query'] : '',
+      '#rows' => 6,
       '#required' => FALSE,
     );
     return $form;
@@ -112,9 +139,9 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     }
     
     // Make sure there is at least one field is provided.
-    if (empty($values['list']) && empty($values['query'])) {
+    if (empty($values['list']) && empty($values['list_query'])) {
       form_set_error('feeds][list', t('Either a list of URIs or a SPARQL query is required.'));
-      form_set_error('feeds][query', '');
+      form_set_error('feeds][list_query', '');
     }
     
     // Validate the list of URIs.
@@ -134,9 +161,15 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     }
     
     // Validate the SPARQL query.
-    if (!empty($values['query'])) {
-      if (!rdfimporter_validate_sparql($values['query'], $errors)) {
-        form_set_error('feeds][query', t('There is a problem with the SPARQL query. ') . implode('. ', $errors));
+    if (!empty($values['list_query'])) {
+      if (!rdfimporter_validate_sparql($values['list_query'], $errors)) {
+        form_set_error('feeds][list_query', t('There is a problem with the SPARQL query. ') . implode('. ', $errors));
+      }
+    }
+    // Validate the SPARQL query.
+    if (!empty($values['data_query'])) {
+      if (!rdfimporter_validate_sparql($values['data_query'], $errors)) {
+        form_set_error('feeds][data_query', t('There is a problem with the SPARQL query. ') . implode('. ', $errors));
       }
     }
   }

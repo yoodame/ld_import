@@ -24,6 +24,8 @@ class RdfImporterParser extends FeedsParser {
    * Implementation of FeedsParser::parse().
    */
   public function parse(FeedsImportBatch $batch, FeedsSource $source) {
+    dd($batch->arc->fetched);
+    
     $individuals = $batch->getRaw();
     // Get the current site language to limit content
     // to that language where possible.

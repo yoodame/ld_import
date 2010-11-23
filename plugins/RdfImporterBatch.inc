@@ -41,7 +41,7 @@ class RdfImporterBatch extends FeedsImportBatch {
     global $language;
     $this->language = $language->language;
     
-    $this->temp_file = file_directory_temp() . '/rdfimporter_batch_' . md5(serialize($uri_list)) . '.temp';
+    $this->temp_file = file_directory_temp() . '/rdfimporter_batch_' . md5(serialize($uri_list)) . '.tmp';
     $this->createTempFile();
   }
   
@@ -67,6 +67,11 @@ class RdfImporterBatch extends FeedsImportBatch {
    */
   public function shiftItem() {
     $this->current_item = NULL;
+    
+    if (!is_object($this->arc)) {
+      $this->loadArc();
+    }
+    
     while ($uri = array_shift($this->items)) {
       $individual = new RdfImporterIndividual($uri, $this->arc, $this->language);
       $individual->arc->resetErrors();
@@ -100,7 +105,6 @@ class RdfImporterBatch extends FeedsImportBatch {
   }
   
   public function createTempFile() {
-    // dd('---- Creating temp file');
     if (!file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE)) {
       throw new Exception(t('RDFimporter: Could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'));
     }
@@ -108,7 +112,6 @@ class RdfImporterBatch extends FeedsImportBatch {
   
   
   public function loadArc() {;
-    // dd('---- Loading ARC');
     $arc = @unserialize(file_get_contents($this->temp_file));
     if (is_object($arc)) {
       $this->arc = $arc;
@@ -119,7 +122,6 @@ class RdfImporterBatch extends FeedsImportBatch {
   }
   
   public function saveArc() {;
-    // dd('---- Saving ARC');
     file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE);
     unset($this->arc);
   }
