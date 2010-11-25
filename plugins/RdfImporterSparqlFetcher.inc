@@ -23,9 +23,11 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     $endpoint = array('remote_store_endpoint' => $source_config['endpoint']);
     $arc = ARC2::getResource();
     $arc->setStore(ARC2::getRemoteStore($endpoint));
-    if (!empty($source_config['data_query'])) {
+    
+    if ($this->config['enable_data_queries'] && !empty($source_config['data_query'])) {
       $this->getSourceData($source_config['data_query'], $arc);
     }
+    
     return new RdfImporterBatch($this->getURIs($source_config), $arc);
   }
   
@@ -102,9 +104,9 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       '#required' => FALSE,
     );
     $form['divider'] = array(
-      '#prefix' => '<p>',
+      '#prefix' => '<p><em>',
       '#value' => t('or...'),
-      '#suffix' => '<p>',
+      '#suffix' => '</em><p>',
     );
     $form['list'] = array(
       '#type' => 'textarea',
@@ -115,9 +117,9 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       '#required' => FALSE,
     );
     $form['data_query'] = array(
-      '#type' => 'textarea',
+      '#type' => ($this->config['enable_data_queries']) ? 'textarea' : 'hidden',
       '#title' => t('Data query (optional)'),
-      '#description' => t('Enter a CONSTRUCT query that returns a graph of all content required for this import. This can make imports more efficient and can make large imports much, much faster. Be sure to set a large batch size under Processor -> Settings.'),
+      '#description' => t('Enter a CONSTRUCT query that returns a graph of all data required for this import.'),
       '#default_value' => isset($source_config['data_query']) ? $source_config['data_query'] : '',
       '#rows' => 6,
       '#required' => FALSE,
@@ -172,5 +174,31 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
         form_set_error('feeds][data_query', t('There is a problem with the SPARQL query. ') . implode('. ', $errors));
       }
     }
+  }
+  
+  /**
+   * Override parent::configDefaults().
+   */
+  public function configDefaults() {
+    return array(
+      'enable_data_queries' => 0,
+    );
+  }
+  
+  /**
+   * Override parent::configForm().
+   */
+  public function configForm(&$form_state) {
+    $form['enable_data_queries'] = array(
+      '#type' => 'radios',
+      '#title' => t('Enable data queries'),
+      '#description' => t('<p>Allow a query to be provided that retrieves a graph of only the data necessary for import. This can make large imports MUCH more efficient. Normally, separate requests will be made to fetch <em>all properties</em> for each individual being mapped (both subjects and objects). This means a lot of HTTP requests and a lot of unnecessary data. By using a data query, only two requests are made: one for the list of URIs to import and one for the data needed for configured mappings.</p><p>Note: When a data query is provided, previews will also use that data.</p><p>Also note: Be sure to set a large batch size under Processor -> Settings.</p>'),
+      '#options' => array(
+        1 => 'Yes',
+        0 => 'No',
+      ),
+      '#default_value' => $this->config['enable_data_queries'],
+    );
+    return $form;
   }
 }

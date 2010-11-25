@@ -24,14 +24,7 @@ class RdfImporterParser extends FeedsParser {
    * Implementation of FeedsParser::parse().
    */
   public function parse(FeedsImportBatch $batch, FeedsSource $source) {
-    dd($batch->arc->fetched);
-    
-    $individuals = $batch->getRaw();
-    // Get the current site language to limit content
-    // to that language where possible.
-    global $language;
-    $batch->language = $language->language;
-    $batch->setItems($individuals);
+    $batch->setItems($batch->getRaw());
   }
   
   /**
@@ -113,7 +106,7 @@ class RdfImporterParser extends FeedsParser {
   }
   
   /**
-   * Based on the mapping source, extract property values from the individual.
+   * Based on the mapping source string, extract property values from the individual.
    */
   public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
 
@@ -145,13 +138,9 @@ class RdfImporterParser extends FeedsParser {
     
     $individual = $batch->shiftItem();
     
-    if(!is_object($individual)) {
-      return;
-    }
-    
     foreach ($individual->getSamples() as $uri => $item) {
       
-      // Only add samples for this property if it hasn't been saved yet or we still need more values
+      // Only add samples for this property if it hasn't been saved yet or we still need more values.
       if (!isset($samples[$uri]) || (count($samples[$uri]['values']) < $max_samples)) {
         
         if (!isset($samples[$uri])) {
@@ -183,7 +172,7 @@ class RdfImporterParser extends FeedsParser {
           $value = $this->trimSample($item->getValue());
         }
         
-        // Reduce duplicates by using hashes as keys
+        // Reduce duplicates by using hashes as keys.
         $key = md5(serialize($value));
         $samples[$uri]['values'][$key]['type'] = $item->getType();
         $samples[$uri]['values'][$key]['value'] = $value;
@@ -215,7 +204,6 @@ class RdfImporterParser extends FeedsParser {
   public function saveSamples(FeedsImportBatch $batch, FeedsSource $source) {
     $config = $source->getConfig();
     $class = get_class($this);
-    // $config[$class]['uri_list'] = $batch->uri_list;
     $config[$class]['samples'] = $batch->samples;
     $config[$class]['last_updated'] = time();
     $source->setConfig($config);
@@ -240,8 +228,6 @@ class RdfImporterParser extends FeedsParser {
   
   /**
    * Helper function to keep sample data short.
-   *
-   * @todo Use views_trim_text() here?
    */
   public function trimSample($string, $max = 80, $delimeter = '...') { 
     
@@ -294,7 +280,6 @@ class RdfImporterParser extends FeedsParser {
       '#options' => array(TRUE => t('Yes'), FALSE => t('No')),
       '#default_value' => !empty($source_config['fetch_labels']) ? $source_config['fetch_labels'] : 0,
     );
-    
     $form['samples'] = array(
       '#type' => 'value',
       '#value' => !empty($source_config['samples']) ? $source_config['samples'] : '',
@@ -304,26 +289,25 @@ class RdfImporterParser extends FeedsParser {
       '#value' => !empty($source_config['last_updated']) ? $source_config['last_updated'] : '',
     );
     
-    $samples = $this->getPreview($source_config);
+    $samples = isset($source_config['samples']) ? $source_config['samples'] : '';
+    $updated = isset($source_config['last_updated']) ? $source_config['last_updated'] : '';
+    $preview_table = (is_array($samples) && count($samples)) ? theme_rdfimporter_samples($samples) : '';
     
     // Need to disable #tree structure here because Feeds will
-    // use array_keys() on this form to get config variables. 
+    // use array_keys() on this form to find config variables. 
     $form['preview'] = array(
       '#type' => 'fieldset',
       '#title' => t('Preview'),
       '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
+      '#collapsed' => (($updated) && (time() - $updated) > 600) ? TRUE : FALSE,
       '#attributes' => array('id' => 'rdfimporter-preview'),
-      '#description' => ($samples) ? t('Last updated '. format_interval(time() - $source_config['last_updated'], 2) . ' ago') : '',
+      '#description' => ($preview_table) ? t('Last updated '. format_interval(time() - $updated, 2) . ' ago') : '',
       '#tree' => FALSE,
       '#weight' => -5,
     );
-    
-    if ($samples) {
+    if ($preview_table) {
       $form['preview']['samples_table'] = array(
-        '#prefix' => '<div>',
-        '#value' => $samples,
-        '#suffix' => '</div>',
+        '#value' => $preview_table,
       );
     }
     else {
@@ -345,17 +329,6 @@ class RdfImporterParser extends FeedsParser {
       '#value' => t('Note: Previewing often involves fetching a LOT of data and can take some time. To make things fast, turn labels OFF and use a low item limit setting.'),
       '#suffix' => '</em></p>',
     );
-    
     return $form;
-  }
-  
-  /**
-   * Get a themed version of the feed samples to use as a preview.
-   */
-  public function getPreview($source_config) {
-    if (is_array($source_config['samples']) && count($source_config['samples'])) {
-      return theme_rdfimporter_samples($source_config['samples']);
-    };
-    return NULL;
   }
 }

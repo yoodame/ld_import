@@ -8,7 +8,7 @@
 
 // NOTE: The batch size must be greater than 1 otherwise
 // progress gets calculated incorrectly.
-define('RDFIMPORTER_NODE_BATCH_SIZE', 2);
+define('RDFIMPORTER_NODE_BATCH_SIZE', 10);
 
 /**
  * Class definition for RdfImporterNodeProcessor.
@@ -19,43 +19,35 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
    * Implementation of FeedsProcessor::process().
    */
   public function process(FeedsImportBatch $batch, FeedsSource $source) {
-
-    // We override the FEEDS_NODE_BATCH_SIZE to use by RDFIMPORTER_NODE_BATCH_SIZE
-    // temporarily setting the 'feeds_node_batch_size' variable
-    // This is a little dirty, but it works for now.
+    // We override the FEEDS_NODE_BATCH_SIZE by temporarily setting
+    // the 'feeds_node_batch_size' variable. This is a little dirty since
+    // it's unclear who else might be setting feeds_node_batch_size and where.
     variable_set('feeds_node_batch_size', $this->config['batch_size']);
     
     parent::process($batch, $source);
+    
+    variable_set('feeds_node_batch_size', NULL);
     
     // If caching is disabled, clear out the ARC index.
     if (!$this->config['arc_caching'] && is_object($batch->arc)) {
       $batch->arc->index = array();
       $batch->arc->fetched = array();
     }
-    
-    variable_set('feeds_node_batch_size', NULL);
-    
+  
+    // Delete the temp file if processing is complete.
     if (!$batch->getItemCount()) {
       file_delete($batch->temp_file);
     }
   }
   
   /**
-   * Implementation of FeedsProcessor::clear().
-   */
-  // public function clear(FeedsBatch $batch, FeedsSource $source) {
-  //   variable_set('feeds_node_batch_size', FEEDS_NODE_BATCH_SIZE);
-  //   parent::clear($batch, $source);
-  // }
-  
-  /**
-   * Override parent::map() to load all available add-on mappers.
+   * Override parent::map() to add some defaults.
    */
   protected function map($batch, $target_node) {
     $individual = $batch->currentItem();
-    // Setting a default title here, but it can be overridden by mappings
+    // Setting the rdfs:label as default title here, but it can be overridden with mappings.
     $target_node->title = $individual->getLabel();
-    // Setting the URI to act as Feeds identifier
+    // Setting the URI to act as Feeds identifier.
     $target_node->feeds_node_item->url = $individual->getUri();
     parent::loadMappers();
     return parent::map($batch, $target_node);
@@ -65,6 +57,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
    * Override setTargetElement to only map title and body fields.
    */
   public function setTargetElement($target_node, $target_element, $value) {
+    // If we have a multi-value array, use the first value.
     if (is_array($value)) {
       $value = (!empty($value)) ? reset($value) : '';
     }
@@ -87,6 +80,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
         'description' => t('The title of the node.'),
        ),
      );
+     
     // Include body field only if available.
     $type = node_get_types('type',  $this->config['content_type']);
     if ($type->has_body) {
@@ -96,6 +90,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
         'description' => t('The body of the node. The teaser will be the same as the entire body.'),
       );
     }
+    
     // Load mappers bundled with Feeds.
     parent::loadMappers();
     
@@ -113,25 +108,6 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     $individual = $batch->currentItem();
     $nid = db_result(db_query("SELECT nid FROM {feeds_node_item} WHERE feed_nid = %d AND id = '%s' AND url = '%s'", $source->feed_nid, $source->id, $individual->getUri()));
     return ($nid) ? $nid : 0;
-  }
-  
-  /**
-   * Loads available mappers from mappers/ directory.
-   */
-  protected static function loadMappers() {
-    static $loaded = FALSE;
-    if (!$loaded) {
-      $path = drupal_get_path('module', 'rdfimporter') .'/mappers';
-      $files = drupal_system_listing('.*\.inc$', $path, 'name', 0);
-      foreach ($files as $file) {
-        if (strstr($file->filename, '/mappers/')) {
-          require_once("./$file->filename");
-        }
-      }
-      // Rebuild cache.
-      module_implements('', FALSE, TRUE);
-    }
-    $loaded = TRUE;
   }
   
   /**
@@ -163,7 +139,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
       '#type' => 'select',
       '#title' => t('Batch size'),
       '#description' => t('Number of URIs to fetch and process into nodes at a time (using Batch API). Setting this higher can make large imports faster, but can lead to PHP timeouts depending on your max_execution_time setting.'),
-      '#options' => drupal_map_assoc(array('2 (default)',3,4,5,6,7,8,9,10,15,20,30,40,50)),
+      '#options' => drupal_map_assoc(array(2,3,4,5,6,7,8,9,10,15,20,30,40,50,100)),
       '#default_value' => $this->config['batch_size'],
     );
     return $form;

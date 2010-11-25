@@ -41,7 +41,6 @@ class RdfImporterBatch extends FeedsImportBatch {
     global $language;
     $this->language = $language->language;
     
-    $this->temp_file = file_directory_temp() . '/rdfimporter_batch_' . md5(serialize($uri_list)) . '.tmp';
     $this->createTempFile();
   }
   
@@ -68,10 +67,13 @@ class RdfImporterBatch extends FeedsImportBatch {
   public function shiftItem() {
     $this->current_item = NULL;
     
-    if (!is_object($this->arc)) {
+    // Sometimes __wakeup() does not get called on unserialize()
+    // and ARC is not automatically reloaded. Jump start it here...
+    if (!isset($this->arc) || !is_object($this->arc)) {
       $this->loadArc();
     }
     
+    // Move through the URI list until we hit a URI that returns data.
     while ($uri = array_shift($this->items)) {
       $individual = new RdfImporterIndividual($uri, $this->arc, $this->language);
       $individual->arc->resetErrors();
@@ -87,7 +89,7 @@ class RdfImporterBatch extends FeedsImportBatch {
   }
   
   /**
-   * If a URI can't be fetched add it to the log and set a message.
+   * If a URI can't be fetched set a message.
    *
    * @todo It would be nice to consolidate this at the end of an import.
    */
@@ -95,50 +97,64 @@ class RdfImporterBatch extends FeedsImportBatch {
     if (!empty($errors)) {
       $message = t('RDFimporter: The remote resource @uri was not imported. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
       drupal_set_message($message, 'status');
-      // watchdog('rdfimporter', $message);
     }
     else {
       $message = t('RDFimporter: The remote resource @uri was not imported. No data was returned.', array('@uri' => $uri));
       drupal_set_message($message, 'status');
-      // watchdog('rdfimporter', $message);
     }
-  }
-  
-  public function createTempFile() {
-    if (!file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE)) {
-      throw new Exception(t('RDFimporter: Could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'));
-    }
-  }
-  
-  
-  public function loadArc() {;
-    $arc = @unserialize(file_get_contents($this->temp_file));
-    if (is_object($arc)) {
-      $this->arc = $arc;
-    }
-    else {
-      throw new Exception(t('RDFimporter: Encountered a problem loading data from the filesystem.'));
-    }
-  }
-  
-  public function saveArc() {;
-    file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE);
-    unset($this->arc);
   }
   
   /**
-   * Make sure required ARC libraries are included after unserialize()
-   *
-   * Due to the way ARC2 includes libraries, necessary classes 
-   * may not be available when a Feeds $batch gets serialized/unserialized, 
-   * making $this->arc unusable. Using __sleep() and __wakeup() we can
-   * be sure that everything is loaded before reconstructing $this->arc.
+   * Attempt to create a temp file on the filesystem for caching between batch operations.
    */
-  function __sleep() {
-    $this->saveArc();
-    return array_keys(get_object_vars($this));
+  public function createTempFile() {
+    $this->temp_file = file_directory_temp() . '/rdfimporter_batch_' . md5(serialize($this->uri_list)) . '.tmp';
+    if (!file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE)) {
+      drupal_set_message(t('RDFimporter: Could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'), 'warning', FALSE);
+    }
   }
   
+  /**
+   * Load a serialized ARC object from the temp file.
+   *
+   * If the ARC object can't be restored, just remove the property.
+   * The import will continue to work, but previously-fetched data
+   * will be re-fetched.
+   */
+  public function loadArc() {;
+    if (file_exists($this->temp_file)) {
+      $this->arc = @unserialize(file_get_contents($this->temp_file));
+    }
+    if (!is_object($this->arc)) {
+      unset($this->arc);
+    }
+  }
+  
+  /**
+   * Serialize the ARC object with all its data and save it to the temp file.
+   */
+  public function saveArc() {
+    if (isset($this->arc)) {
+      file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE);
+      unset($this->arc);
+    }
+  }
+  
+  /**
+   * Empty out the current item before serializing so ARC data is not saved to the database.
+   */
+  public function clearItem() {
+    $this->current_item = NULL;
+  }
+  
+  /**
+   * Make sure required ARC libraries are included after unserialize().
+   *
+   * Due to the way ARC2 includes libraries, necessary classes 
+   * may not be available when a Feeds $batch gets serialized/unserialized.
+   * Using __sleep() and __wakeup() we can ensure that everything
+   * is loaded before reconstructing the ARC object.
+   */
   function __wakeup() {
     // Make sure the ARC base is included.
     rdfimporter_include_arc();
@@ -146,6 +162,13 @@ class RdfImporterBatch extends FeedsImportBatch {
     ARC2::getResource();
     ARC2::getRemoteStore();
     $this->loadArc();
+  }
+  
+  function __sleep() {
+    $this->saveArc();
+    $this->clearItem();
+    // MUST return something here.
+    return array_keys(get_object_vars($this));
   }
 }
 

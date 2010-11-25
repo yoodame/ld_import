@@ -245,9 +245,10 @@ class RdfImporterPropertyValue extends RdfImporterResource {
     parent::__construct(NULL, $arc, $site_language);
     $this->item = $item;
     
-    // If this is an object property, set the active URI. Otherwise make sure it's null.
-    // If the URI is null, arc will return empty arrays for methods that attempt
-    // to fetch properties. Empty arrays are better than incorrect data.
+    // If this is an object property, set the active URI. Otherwise make sure it's NULL.
+    // If the URI is NULL, arc will return empty arrays for methods that attempt
+    // to fetch properties. This would return empty arrays when attempting to get
+    // a label for a data property
     $this->uri = ($this->getType() == 'uri') ? $this->getValue() : NULL;
   }
   
@@ -261,9 +262,5 @@ class RdfImporterPropertyValue extends RdfImporterResource {
   
   public function getLanguage() {
     return $this->item['lang'];
-  }
-  
-  public function getContent() {
-    return ($this->getType() == 'uri') ? $this->getLabel() : $this->getValue();
   }
 }
