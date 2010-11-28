@@ -74,12 +74,12 @@ class RdfImporterLinkedDataFetcher extends FeedsFetcher {
         foreach ($items as $v) {
           $v = trim($v);
           if (!empty($v) && !rdfimporter_validate_uri($v)) {
-            form_set_error('feeds][list', t('The URI "%v" is not valid.', array('%v' => $v)));
+            form_set_error('feeds][RdfImporterLinkedDataFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
           }
         }
       }
       else {
-        form_set_error('feeds][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
+        form_set_error('feeds][RdfImporterLinkedDataFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
       }
     }
   }

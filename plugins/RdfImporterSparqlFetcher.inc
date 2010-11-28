@@ -27,9 +27,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     $arc->setStore(ARC2::getRemoteStore($endpoint));
     
     if ($this->config['enable_data_queries'] && !empty($source_config['data_query'])) {
-      dd('Getting data...');
       $this->getSourceData($source_config['data_query'], $arc);
-      dd('Finished.');
     }
     
     return new RdfImporterBatch($this->getURIs($source_config), $arc);
@@ -135,20 +133,19 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
   /**
    * Override parent::sourceFormValidate().
    * 
-   * @todo Invalid form elements are not getting highlighted
    * @todo Validate query type (SELECT)
    */
   public function sourceFormValidate(&$values) {
     
     // Validate the endpoint.
     if (!empty($values['endpoint']) && !valid_url($values['endpoint'], TRUE)) {
-      form_set_error('feeds][endpoint', t('The endpoint must be a valid URL.'));
+      form_set_error('feeds][RdfImporterSparqlFetcher][endpoint', t('The endpoint must be a valid URL.'));
     }
     
     // Make sure there is at least one field is provided.
     if (empty($values['list']) && empty($values['list_query'])) {
-      form_set_error('feeds][list', t('Either a list of URIs or a SPARQL query is required.'));
-      form_set_error('feeds][list_query', '');
+      form_set_error('feeds][RdfImporterSparqlFetcher][list', t('Either a list of URIs or a SPARQL query is required.'));
+      form_set_error('feeds][RdfImporterSparqlFetcher][list_query', '');
     }
     
     // Validate the list of URIs.
@@ -158,25 +155,25 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
         foreach ($items as $v) {
           $v = trim($v);
           if (!empty($v) && !rdfimporter_validate_uri($v)) {
-            form_set_error('feeds][list', t('The URI "%v" is not valid.', array('%v' => $v)));
+            form_set_error('feeds][RdfImporterSparqlFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
           }
         }
       }
       else {
-        form_set_error('feeds][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
+        form_set_error('feeds][RdfImporterSparqlFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
       }
     }
     
     // Validate the SPARQL query.
     if (!empty($values['list_query'])) {
       if (!rdfimporter_validate_sparql($values['list_query'], $errors)) {
-        form_set_error('feeds][list_query', t('There is a problem with the SPARQL query. ') . implode('. ', $errors));
+        form_set_error('feeds][RdfImporterSparqlFetcher][list_query', t('There is a problem with the SPARQL query. ') . theme_item_list($errors));
       }
     }
     // Validate the SPARQL query.
     if (!empty($values['data_query'])) {
       if (!rdfimporter_validate_sparql($values['data_query'], $errors)) {
-        form_set_error('feeds][data_query', t('There is a problem with the SPARQL query. ') . implode('. ', $errors));
+        form_set_error('feeds][RdfImporterSparqlFetcher][data_query', t('There is a problem with the SPARQL query. ') . theme_item_list($errors));
       }
     }
   }
@@ -197,7 +194,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     $form['enable_data_queries'] = array(
       '#type' => 'radios',
       '#title' => t('Enable data queries'),
-      '#description' => t('<p>Allow a query to be provided that retrieves a graph of all data necessary for import. This can make large imports MUCH more efficient. Normally, separate requests will be made to fetch <em>all properties</em> for each individual being mapped (both subjects and objects). This means a lot of HTTP requests and a lot of unnecessary data. By using a data query, only two requests are made: one for the list of URIs to import and one for the data needed for configured mappings.</p><p>Note: When a data query is provided, previews will also use that data.</p><p>Also note: Be sure to set a large batch size under Processor -> Settings.</p>'),
+      '#description' => t('<p>Allow a query to be provided that retrieves a graph of all data necessary for import. This can make large imports MUCH more efficient. Normally, separate requests will be made to fetch <em>all properties</em> for each individual being mapped (both subjects and objects). This means a lot of HTTP requests and a lot of unnecessary data. By using a data query, only two requests are made: one for the list of URIs to import and one for the data needed for configured mappings.</p><p>Note: When a data query is provided, previews will also use that data.</p><p>Also: Be sure to set a large batch size under Processor -> Settings.</p>'),
       '#options' => array(
         1 => 'Yes',
         0 => 'No',
