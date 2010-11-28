@@ -121,8 +121,8 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     );
     $form['data_query'] = array(
       '#type' => ($this->config['enable_data_queries']) ? 'textarea' : 'hidden',
-      '#title' => t('Data query (optional)'),
-      '#description' => t('Enter a CONSTRUCT query that returns a graph of all data required for this import.'),
+      '#title' => t('Data query'),
+      '#description' => t('Enter a CONSTRUCT query that returns a graph with all data required for this import.'),
       '#default_value' => isset($source_config['data_query']) ? $source_config['data_query'] : '',
       '#rows' => 6,
       '#required' => FALSE,
@@ -167,13 +167,13 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     // Validate the SPARQL query.
     if (!empty($values['list_query'])) {
       if (!rdfimporter_validate_sparql($values['list_query'], $errors)) {
-        form_set_error('feeds][RdfImporterSparqlFetcher][list_query', t('There is a problem with the SPARQL query. ') . theme_item_list($errors));
+        form_set_error('feeds][RdfImporterSparqlFetcher][list_query', t('There is a problem with the SPARQL query.') . theme_item_list($errors));
       }
     }
     // Validate the SPARQL query.
     if (!empty($values['data_query'])) {
       if (!rdfimporter_validate_sparql($values['data_query'], $errors)) {
-        form_set_error('feeds][RdfImporterSparqlFetcher][data_query', t('There is a problem with the SPARQL query. ') . theme_item_list($errors));
+        form_set_error('feeds][RdfImporterSparqlFetcher][data_query', t('There is a problem with the data query.') . theme_item_list($errors));
       }
     }
   }

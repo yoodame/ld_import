@@ -68,7 +68,6 @@ Some future plans
 - Allow single nodes to be updated/re-imported independently.
 - Make the mapping screen much easier to use, possibly by using JavaScript-based visual mapping.
 - Come up with a way to import RDFa. ARC2 can parse it already, but the structure can be a little funny.
-- Allow advanced users to enter specific SPARQL queries that fetch only the necessary data in order to avoid fetching the massive amount of extra data that's currently being fetched.
 
 
 Other modules
