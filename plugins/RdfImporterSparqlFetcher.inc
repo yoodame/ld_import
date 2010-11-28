@@ -20,12 +20,16 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
    */
   public function fetch(FeedsSource $source) {
     $source_config = $source->getConfigFor($this);
-    $endpoint = array('remote_store_endpoint' => $source_config['endpoint']);
+    $endpoint = array(
+      'remote_store_endpoint' => $source_config['endpoint'],
+    );
     $arc = ARC2::getResource();
     $arc->setStore(ARC2::getRemoteStore($endpoint));
     
     if ($this->config['enable_data_queries'] && !empty($source_config['data_query'])) {
+      dd('Getting data...');
       $this->getSourceData($source_config['data_query'], $arc);
+      dd('Finished.');
     }
     
     return new RdfImporterBatch($this->getURIs($source_config), $arc);
@@ -74,7 +78,8 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       $arc->fetched = array_keys($index);
     }
     else {
-      throw new Exception(t('RDFimporter: Could not retrieve any data using the provided data query.'));
+      $errors = !empty($index['errors']) ? theme_item_list($index['errors']) : NULL;
+      throw new Exception(t('Could not retrieve any data using the provided data query. !errors', array('!errors' => $errors)));
     }
   }
   
@@ -192,7 +197,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     $form['enable_data_queries'] = array(
       '#type' => 'radios',
       '#title' => t('Enable data queries'),
-      '#description' => t('<p>Allow a query to be provided that retrieves a graph of only the data necessary for import. This can make large imports MUCH more efficient. Normally, separate requests will be made to fetch <em>all properties</em> for each individual being mapped (both subjects and objects). This means a lot of HTTP requests and a lot of unnecessary data. By using a data query, only two requests are made: one for the list of URIs to import and one for the data needed for configured mappings.</p><p>Note: When a data query is provided, previews will also use that data.</p><p>Also note: Be sure to set a large batch size under Processor -> Settings.</p>'),
+      '#description' => t('<p>Allow a query to be provided that retrieves a graph of all data necessary for import. This can make large imports MUCH more efficient. Normally, separate requests will be made to fetch <em>all properties</em> for each individual being mapped (both subjects and objects). This means a lot of HTTP requests and a lot of unnecessary data. By using a data query, only two requests are made: one for the list of URIs to import and one for the data needed for configured mappings.</p><p>Note: When a data query is provided, previews will also use that data.</p><p>Also note: Be sure to set a large batch size under Processor -> Settings.</p>'),
       '#options' => array(
         1 => 'Yes',
         0 => 'No',

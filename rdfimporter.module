@@ -317,13 +317,13 @@ function rdfimporter_refresh_preview_finished($success, $results, $operations) {
 function rdfimporter_include_arc() {
   if (!class_exists('ARC2')) {
     if (module_exists('libraries') && file_exists(libraries_get_path('arc') ."/ARC2.php")) {
-      require_once libraries_get_path('arc') .'/ARC2.php';
+      @include_once libraries_get_path('arc') .'/ARC2.php';
     }
     elseif (defined('RDF_ARC2_PATH') && file_exists('./' . RDF_ARC2_PATH . '/ARC2.php')) {
-      require_once './' . RDF_ARC2_PATH . '/ARC2.php';
+      @include_once './' . RDF_ARC2_PATH . '/ARC2.php';
     }
     elseif (file_exists(drupal_get_path('module', 'rdfimporter') . '/arc/ARC2.php')) {
-      require_once drupal_get_path('module', 'rdfimporter') . '/arc/ARC2.php';
+      @include_once drupal_get_path('module', 'rdfimporter') . '/arc/ARC2.php';
     }
   }
   if (!class_exists('ARC2')) {
