@@ -56,7 +56,7 @@ Links to further documentation and screencasts will be added here as they become
 
 Status
 ======
-This code is definitely a work in progress and is not stable. For now, the issue queue on GitHub seems like the best place to post problems and bugs.
+This code is experimental and is not stable or reliable. For now, the issue queue on GitHub seems like the best place to post problems and bugs.
 
 We would love some feedback on various use cases, how something like this might be used, and how it could be improved.
 
