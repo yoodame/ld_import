@@ -47,11 +47,15 @@ Documentation
 =============
 - Screencast #1: [Installing the module + requirements][screencast1]
 - Screencast #2: [Basic usage, importing Linked Data from VIVO][screencast2]
+- Screencast #3: [Importing from a SPARQL endpoint][screencast3]
+- Screencast #4: [Setting up node mappings][screencast4]
 
 Links to further documentation and screencasts will be added here as they become available.
 
 [screencast1]: http://vimeo.com/16965880
 [screencast2]: http://vimeo.com/16990421
+[screencast3]: http://vimeo.com/21471842
+[screencast4]: http://vimeo.com/21484234
 
 
 Status
