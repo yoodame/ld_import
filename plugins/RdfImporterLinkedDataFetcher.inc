@@ -8,7 +8,7 @@
 
 // The RdfImporterBatch class has been separated so it can
 // be used with multiple fetchers.
-require_once(dirname(__FILE__) .'/RdfImporterBatch.inc');
+require_once(dirname(__FILE__) .'/RdfImporterResult.inc');
 
 /**
  * Class definition for RdfImporterLinkedDataFetcher.
