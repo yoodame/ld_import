@@ -15,6 +15,8 @@
 define('RDFIMPORTER_MAX_SAMPLES', 4);
 define('RDFIMPORTER_PREVIEW_FETCH_LIMIT', 0);
 
+require_once(dirname(__FILE__) .'/RdfImporterParserResult.inc');
+
 /**
  * Class definition for RdfImporterParser.
  */
@@ -24,7 +26,8 @@ class RdfImporterParser extends FeedsParser {
    * Implementation of FeedsParser::parse().
    */
   public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
-    $batch->setItems($batch->getRaw());
+    $items = $fetcher_result->getRaw();
+    return new RdfImporterParserResult($items, $fetcher_result->arc);
   }
 
   /**
@@ -33,6 +36,8 @@ class RdfImporterParser extends FeedsParser {
    * @todo Need to give some guidance if there are no samples/sources available.
    */
   public function getMappingSources() {
+    return FALSE;
+
     /*
     $sources = array();
     $samples = $this->loadSamples();
@@ -69,8 +74,6 @@ class RdfImporterParser extends FeedsParser {
 
     return array_reverse($sources);
     */
-
-    return FALSE;
   }
 
   /**
@@ -136,11 +139,14 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Gather sample data for all an individual's properties and save it in the batch.
    */
-  public function gatherSamples(FeedsImportBatch $batch) {
-    $samples = ($batch->samples) ? $batch->samples : array();
-    $max_samples = ($batch->sample_limit) ? $batch->sample_limit : RDFIMPORTER_MAX_SAMPLES;
+  public function gatherSamples(RdfImporterParserResult $parser_result) {
 
-    $individual = $batch->shiftItem();
+    watchdog('debug', basename(__FILE__) . ":" . __FUNCTION__);
+
+    $samples = ($parser_result->samples) ? $parser_result->samples : array();
+    $max_samples = ($parser_result->sample_limit) ? $parser_result->sample_limit : RDFIMPORTER_MAX_SAMPLES;
+
+    $individual = $parser_result->shiftItem();
 
     foreach ($individual->getSamples() as $uri => $item) {
 
@@ -148,14 +154,14 @@ class RdfImporterParser extends FeedsParser {
       if (!isset($samples[$uri]) || (count($samples[$uri]['values']) < $max_samples)) {
 
         if (!isset($samples[$uri])) {
-          $batch->arc->setURI($uri);
+          $parser_result->arc->setURI($uri);
           // If enabled, try to get a label for each property URI, otherwise make one.
-          if ($batch->fetch_labels) {
-            $label = $batch->arc->getPropValue(RDFS_LABEL_URI);
-            $label = ($label) ? $label : $batch->arc->extractTermLabel($uri);
+          if ($parser_result->fetch_labels) {
+            $label = $parser_result->arc->getPropValue(RDFS_LABEL_URI);
+            $label = ($label) ? $label : $parser_result->arc->extractTermLabel($uri);
           }
           else {
-            $label = $batch->arc->extractTermLabel($uri);
+            $label = $parser_result->arc->extractTermLabel($uri);
           }
           $samples[$uri] = array();
           $samples[$uri]['label'] = $label;
@@ -165,7 +171,7 @@ class RdfImporterParser extends FeedsParser {
         // Fetch a label for object properties only if enabled.
         $label = '';
         if ($item->getType() == 'uri') {
-          if ($batch->fetch_labels) {
+          if ($parser_result->fetch_labels) {
             $label = $item->getLabel();
             $label = $this->trimSample($label);
           }
@@ -197,7 +203,7 @@ class RdfImporterParser extends FeedsParser {
       return FALSE;
     }
     else {
-      $batch->samples = $samples;
+      $parser_result->samples = $samples;
       return TRUE;
     }
   }
@@ -205,10 +211,10 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Save sample data to the current $source config so it gets saved to the database.
    */
-  public function saveSamples(FeedsImportBatch $batch, FeedsSource $source) {
+  public function saveSamples(RdfImporterParserResult $parser_result, FeedsSource $source) {
     $config = $source->getConfig();
     $class = get_class($this);
-    $config[$class]['samples'] = $batch->samples;
+    $config[$class]['samples'] = $parser_result->samples;
     $config[$class]['last_updated'] = time();
     $source->setConfig($config);
     $source->save();

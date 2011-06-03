@@ -185,7 +185,7 @@ function rdfimporter_form_alter($form, $form_state, $form_id) {
  */
 function rdfimporter_refresh_preview_submit($form, $form_state) {
   $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form_state['values']['rdfimporter_importer'];
-  $feed_nid = ($form_state['values']['rdfimporter_feed_nid']) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
+  $feed_nid = (isset($form_state['values']['rdfimporter_feed_nid'])) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
 
   // For a node form save the node. For a Feeds import form save the source.
   if ($form['#id'] == 'node-form') {
@@ -222,6 +222,9 @@ function rdfimporter_refresh_preview_submit($form, $form_state) {
  * except instead of process() we're calling gatherSamples().
  */
 function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $context) {
+
+  watchdog('debug', basename(__FILE__) . ":" . __FUNCTION__);
+
   $context['finished'] = 1;
 
   // Stashing the nid in here so we can do a drupal_goto()
@@ -231,16 +234,17 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $
   try {
     $source = feeds_source($importer_id, $feed_nid);
 
-    // Run a feed preview() to get an initial FeedsImportBatch object
+    // Run a feed preview() to get an initial FeedsResult object
     // and save it in the Batch API's sandbox to use for each pass.
     // The object has to be serialized/unserialized by hand otherwise
     // it will not re-initialize correctly.
-    if (!isset($context['sandbox']['feeds_batch'])) {
+    if (!isset($context['sandbox']['parser_result'])) {
 
-      $feeds_batch = $source->preview();
+      $parser_result = $source->preview();
 
       // If we don't have a list of URIs to fetch, no reason to continue.
-      if (!$feeds_batch->getItemCount()) {
+      if (! count($parser_result->items)) {
+
         drupal_set_message(t('RDFimporter: Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
         $context['finished'] = 1;
         return;
@@ -249,44 +253,48 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $
       // If the number of items exceeds the specified limit, trim the items array.
       $config = $source->getConfigFor($source->importer->parser);
       $max = $config['fetch_limit'];
-      if ($max < $feeds_batch->getItemCount() && $max > 0) {
-        $feeds_batch->items = array_slice($feeds_batch->items, 0, $max);
+      if ($max < count($parser_result->items) && $max > 0) {
+        $parser_result->items = array_slice($parser_result->items, 0, $max);
       }
 
-      $feeds_batch->sample_limit = $config['sample_limit'];
-      $feeds_batch->fetch_labels = $config['fetch_labels'];
+      $parser_result->sample_limit = $config['sample_limit'];
+      $parser_result->fetch_labels = $config['fetch_labels'];
 
-      $context['sandbox']['total'] = $feeds_batch->getItemCount();
-      $context['sandbox']['feeds_batch'] = serialize($feeds_batch);
+      $context['sandbox']['total'] = count($parser_result->items);
+      $context['sandbox']['parser_result'] = serialize($parser_result);
     }
 
-    $feeds_batch = isset($feeds_batch) ? $feeds_batch : unserialize($context['sandbox']['feeds_batch']);
+
+
+    $parser_result = isset($parser_result) ? $parser_result : unserialize($context['sandbox']['parser_result']);
 
     // For some reason the __wakeup() function is not being called
     // when the FeedsImportBatch object gets unserialized.
     // So we have to give it a little kick in the ass to re-initialize ARC.
-    if (isset($feeds_batch->arc) && !is_object($feeds_batch->arc)) {
-      $feeds_batch->__wakeup();
+    if (isset($parser_result->arc) && !is_object($parser_result->arc)) {
+      $parser_result->__wakeup();
     }
+
 
     // If gatherSamples() returns FALSE it means that we hit a limit
     // and need to stop gathering samples.
-    $saved = $source->importer->parser->gatherSamples($feeds_batch);
-    $remaining = $feeds_batch->getItemCount();
+    $saved = $source->importer->parser->gatherSamples($parser_result);
+    $remaining = count($parser_result->items);
+
 
     // Finished!
     if (!$remaining || !$saved) {
       // Only save new preview if there is actually data.
-      if (!empty($feeds_batch->samples)) {
+      if (!empty($parser_result->samples)) {
         drupal_set_message(t('RDFimporter: The preview completed successfully.'), 'status', FALSE);
-        $source->importer->parser->saveSamples($feeds_batch, $source);
+        $source->importer->parser->saveSamples($parser_result, $source);
       }
-      file_delete($feeds_batch->temp_file);
+      file_unmanaged_delete($parser_result->temp_file);
       $context['finished'] = 1;
       return;
     }
 
-    $context['sandbox']['feeds_batch'] = serialize($feeds_batch);
+    $context['sandbox']['parser_result'] = serialize($parser_result);
     $context['finished'] = ($context['sandbox']['total'] - $remaining) / $context['sandbox']['total'];
   }
   catch (Exception $e) {
