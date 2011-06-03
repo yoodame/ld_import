@@ -5,7 +5,7 @@
  * @file
  * RDFimporter module - Feeds plugins with added 'preview' functionality.
  */
- 
+
 /**
  * Implementation of hook_menu().
  */
@@ -112,29 +112,29 @@ function rdfimporter_feeds_plugins() {
  * Implementation of hook_form_alter().
  *
  * Add importer id and feed nid (0 for node-less feeds) to the Feeds source form.
- * These are needed for the batch process that fetches feed previews. The values 
- * must be added here with an alter because the source form itself has no 
+ * These are needed for the batch process that fetches feed previews. The values
+ * must be added here with an alter because the source form itself has no
  * awareness of the active importer or feed nid.
  */
 function rdfimporter_form_alter(&$form, $form_state, $form_id) {
   if ($form['#id'] == 'node-form' || $form['#id'] == 'feeds-import-form') {
-    
+
     $form['feeds']['#title'] = t('RDF import');
 
     // Only continue if there is a Feeds source form present
     // and our parser is being used.
     if (isset($form['feeds']['RdfImporterParser'])) {
-      
+
       $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form['#feed_id'];
       $feed_nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : 0;
-      
-      // If the node form has not been saved yet remove 
+
+      // If the node form has not been saved yet remove
       // some of the preview elements and change the text.
       if ($form['#id'] == 'node-form' && !$feed_nid) {
         $form['feeds']['RdfImporterParser']['preview']['status_message']['#value'] = t('Run a preview to see sample data for this import. The preview is also used to show available properties on the mappings page.');
         // $form['feeds']['RdfImporterParser']['preview']['refresh']['#value'] = t('Save and Preview');
       }
-      
+
       // Store values required by the preview submit handler.
       $form['rdfimporter_feed_nid'] = array(
         '#type' => 'value',
@@ -144,7 +144,7 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'value',
         '#value' => $importer_id,
       );
-      
+
       // If there is sample data, also add an "Edit mappings" link.
       if (isset($form['feeds']['RdfImporterParser']['preview']['samples_table'])) {
         $form['feeds']['RdfImporterParser']['mappings_link'] = array(
@@ -156,7 +156,7 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
       }
     }
   }
-  
+
   // Add a preview table to the mappings form.
   if ($form_id == 'feeds_ui_mapping_form' && (get_class($form['#importer']->parser) == 'RdfImporterParser')) {
     drupal_add_css(drupal_get_path('module', 'rdfimporter') . '/rdfimporter.css');
@@ -186,7 +186,7 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
 function rdfimporter_refresh_preview_submit($form, &$form_state) {
   $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form_state['values']['rdfimporter_importer'];
   $feed_nid = ($form_state['values']['rdfimporter_feed_nid']) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
-  
+
   // For a node form save the node. For a Feeds import form save the source.
   if ($form['#id'] == 'node-form') {
     module_load_include('inc', 'node', 'node.pages');
@@ -200,7 +200,7 @@ function rdfimporter_refresh_preview_submit($form, &$form_state) {
     $source->addConfig($form_state['values']['feeds']);
     $source->save();
   }
-  
+
   $batch = array(
     'operations' => array(
       array('rdfimporter_refresh_preview_process', array($importer_id, $feed_nid)),
@@ -217,63 +217,63 @@ function rdfimporter_refresh_preview_submit($form, &$form_state) {
 /**
  * Batch API "process" callback for preview.
  *
- * Creates a FeedsImportBatch object that accumulates sample data 
- * between passes. Works similarly to a real Feeds import 
+ * Creates a FeedsImportBatch object that accumulates sample data
+ * between passes. Works similarly to a real Feeds import
  * except instead of process() we're calling gatherSamples().
  */
 function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &$context) {
   $context['finished'] = 1;
-  
+
   // Stashing the nid in here so we can do a drupal_goto()
   // redirect after the batch finishes.
   $context['results']['feed_nid'] = $feed_nid;
-  
+
   try {
     $source = feeds_source($importer_id, $feed_nid);
-    
+
     // Run a feed preview() to get an initial FeedsImportBatch object
     // and save it in the Batch API's sandbox to use for each pass.
     // The object has to be serialized/unserialized by hand otherwise
     // it will not re-initialize correctly.
     if (!isset($context['sandbox']['feeds_batch'])) {
-      
+
       $feeds_batch = $source->preview();
-      
+
       // If we don't have a list of URIs to fetch, no reason to continue.
       if (!$feeds_batch->getItemCount()) {
         drupal_set_message(t('RDFimporter: Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
         $context['finished'] = 1;
         return;
       }
-      
+
       // If the number of items exceeds the specified limit, trim the items array.
       $config = $source->getConfigFor($source->importer->parser);
       $max = $config['fetch_limit'];
       if ($max < $feeds_batch->getItemCount() && $max > 0) {
         $feeds_batch->items = array_slice($feeds_batch->items, 0, $max);
       }
-      
+
       $feeds_batch->sample_limit = $config['sample_limit'];
       $feeds_batch->fetch_labels = $config['fetch_labels'];
-      
+
       $context['sandbox']['total'] = $feeds_batch->getItemCount();
       $context['sandbox']['feeds_batch'] = serialize($feeds_batch);
     }
-    
+
     $feeds_batch = isset($feeds_batch) ? $feeds_batch : unserialize($context['sandbox']['feeds_batch']);
-    
+
     // For some reason the __wakeup() function is not being called
-    // when the FeedsImportBatch object gets unserialized. 
+    // when the FeedsImportBatch object gets unserialized.
     // So we have to give it a little kick in the ass to re-initialize ARC.
     if (isset($feeds_batch->arc) && !is_object($feeds_batch->arc)) {
       $feeds_batch->__wakeup();
     }
-    
+
     // If gatherSamples() returns FALSE it means that we hit a limit
     // and need to stop gathering samples.
     $saved = $source->importer->parser->gatherSamples($feeds_batch);
     $remaining = $feeds_batch->getItemCount();
-    
+
     // Finished!
     if (!$remaining || !$saved) {
       // Only save new preview if there is actually data.
@@ -285,7 +285,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
       $context['finished'] = 1;
       return;
     }
-    
+
     $context['sandbox']['feeds_batch'] = serialize($feeds_batch);
     $context['finished'] = ($context['sandbox']['total'] - $remaining) / $context['sandbox']['total'];
   }
@@ -298,7 +298,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &
  * Batch API "finished" callback for preview.
  *
  * If working with a feed node, redirect to node edit form
- * after the preview import is completed. 
+ * after the preview import is completed.
  */
 function rdfimporter_refresh_preview_finished($success, $results, $operations) {
   if ($success && !empty($results['feed_nid'])) {
@@ -368,7 +368,7 @@ function theme_rdfimporter_samples($samples) {
   $output = '';
   if (!empty($samples)) {
     $rows = array();
-    
+
     foreach ($samples as $uri => $property) {
       $row = $items = array();
       $row[0] = array();
@@ -377,16 +377,16 @@ function theme_rdfimporter_samples($samples) {
       $row[0]['data'] = '<strong class="property-label">'. $label .'</strong>';
       $row[0]['data'] .= '<em class="property-uri">'. $uri .'</em>';
       $row[0]['class'] = 'property';
-      
+
       // Build a list of property values
       foreach ($property['values'] as $i => $item) {
         $items[$i] = theme('rdfimporter_sample', $item);
       }
-      
+
       $row[1] = theme('item_list', $items);
       $rows[] = $row;
     }
-    
+
     // Sort by property name
     uasort($rows, 'rdfimporter_sort_table_rows');
     $header = array(
@@ -403,7 +403,7 @@ function theme_rdfimporter_samples($samples) {
  */
 function theme_rdfimporter_sample($item) {
   $sample = '';
-  
+
   // Handle object properties differently
   if ($item['type'] == 'uri') {
     // Only output a label if it's there
