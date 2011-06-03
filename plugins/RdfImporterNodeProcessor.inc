@@ -18,28 +18,28 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
   /**
    * Implementation of FeedsProcessor::process().
    */
-  public function process(FeedsImportBatch $batch, FeedsSource $source) {
+  public function process(FeedsResult $batch, FeedsSource $source) {
     // We override the FEEDS_NODE_BATCH_SIZE by temporarily setting
     // the 'feeds_node_batch_size' variable. This is a little dirty since
     // it's unclear who else might be setting feeds_node_batch_size and where.
     variable_set('feeds_node_batch_size', $this->config['batch_size']);
-    
+
     parent::process($batch, $source);
-    
+
     variable_set('feeds_node_batch_size', NULL);
-    
+
     // If caching is disabled, clear out the ARC index.
     if (!$this->config['arc_caching'] && is_object($batch->arc)) {
       $batch->arc->index = array();
       $batch->arc->fetched = array();
     }
-  
+
     // Delete the temp file if processing is complete.
     if (!$batch->getItemCount()) {
       file_delete($batch->temp_file);
     }
   }
-  
+
   /**
    * Override parent::map() to add some defaults.
    */
@@ -52,7 +52,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     parent::loadMappers();
     return parent::map($batch, $target_node);
   }
-  
+
   /**
    * Override setTargetElement to only map title and body fields.
    */
@@ -74,33 +74,18 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
    * Return available mapping targets.
    */
   public function getMappingTargets() {
-    $targets = array(
-      'title' => array(
-        'name' => t('Title'),
-        'description' => t('The title of the node.'),
-       ),
-     );
-     
-    // Include body field only if available.
-    $type = node_get_types('type',  $this->config['content_type']);
-    if ($type->has_body) {
-      // Using 'teaser' instead of 'body' forces entire content above the break.
-      $targets['body'] = array(
-        'name' => t('Body'),
-        'description' => t('The body of the node. The teaser will be the same as the entire body.'),
-      );
-    }
-    
+    $type = node_type_get_type($this->config['content_type']);
+    $targets = parent::getMappingTargets();
+
     // Load mappers bundled with Feeds.
-    parent::loadMappers();
-    
+    self::loadMappers();
+
     // Let other modules expose mapping targets.
-    drupal_alter('feeds_node_processor_targets', $targets, $this->config['content_type']);
-    drupal_alter('rdfimporter_node_processor_targets', $targets, $this->config['content_type']);
-    
+    feeds_alter('rdfimporter_node_processor_targets', $targets, 'node', $this->config['content_type']);
+
     return $targets;
   }
-  
+
   /**
    * Get nid of an existing feed item node if available.
    */
@@ -109,7 +94,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     $nid = db_result(db_query("SELECT nid FROM {feeds_node_item} WHERE feed_nid = %d AND id = '%s' AND url = '%s'", $source->feed_nid, $source->id, $individual->getUri()));
     return ($nid) ? $nid : 0;
   }
-  
+
   /**
    * Override parent::configDefaults().
    */
@@ -119,7 +104,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     $defaults['batch_size'] = RDFIMPORTER_NODE_BATCH_SIZE;
     return $defaults;
   }
-  
+
   /**
    * Override parent::configForm().
    */
