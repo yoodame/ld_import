@@ -135,7 +135,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
    * 
    * @todo Validate query type (SELECT)
    */
-  public function sourceFormValidate(&$values) {
+  public function sourceFormValidate($values) {
     
     // Validate the endpoint.
     if (!empty($values['endpoint']) && !valid_url($values['endpoint'], TRUE)) {
@@ -190,7 +190,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
   /**
    * Override parent::configForm().
    */
-  public function configForm(&$form_state) {
+  public function configForm($form_state) {
     $form['enable_data_queries'] = array(
       '#type' => 'radios',
       '#title' => t('Enable data queries'),

@@ -23,6 +23,6 @@ function rdfimporter_enable() {
  * than Feeds should take care of this.
  */
 function rdfimporter_install() {
-  $feeds_weight = (int) db_query("SELECT weight FROM {system} WHERE name = 'feeds' AND type = 'module'"));
-  db_query("UPDATE {system} SET weight = %d WHERE name = 'rdfimporter' AND type = 'module'", $weight + 10)->fetchField;
+  $feeds_weight = (int) db_query("SELECT weight FROM {system} WHERE name = 'feeds' AND type = 'module'")->fetchField;
+  db_query("UPDATE {system} SET weight = :weight WHERE name = 'rdfimporter' AND type = 'module'", array(':weight' => $weight + 10))->fetchField;
 }

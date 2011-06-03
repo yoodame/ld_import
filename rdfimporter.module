@@ -116,7 +116,7 @@ function rdfimporter_feeds_plugins() {
  * must be added here with an alter because the source form itself has no
  * awareness of the active importer or feed nid.
  */
-function rdfimporter_form_alter(&$form, $form_state, $form_id) {
+function rdfimporter_form_alter($form, $form_state, $form_id) {
   if ($form['#id'] == 'node-form' || $form['#id'] == 'feeds-import-form') {
 
     $form['feeds']['#title'] = t('RDF import');
@@ -183,14 +183,14 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
  *  2. Feeds' standalone import form
  * Form arrays will be different depending on where the preview originates.
  */
-function rdfimporter_refresh_preview_submit($form, &$form_state) {
+function rdfimporter_refresh_preview_submit($form, $form_state) {
   $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form_state['values']['rdfimporter_importer'];
   $feed_nid = ($form_state['values']['rdfimporter_feed_nid']) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
 
   // For a node form save the node. For a Feeds import form save the source.
   if ($form['#id'] == 'node-form') {
     module_load_include('inc', 'node', 'node.pages');
-    node_form_submit($form, &$form_state);
+    node_form_submit($form, $form_state);
     // If this is a brand new node there wasn't an nid available.
     // It should have been added to the $form_state after saving.
     $feed_nid = $form_state['nid'];
@@ -221,7 +221,7 @@ function rdfimporter_refresh_preview_submit($form, &$form_state) {
  * between passes. Works similarly to a real Feeds import
  * except instead of process() we're calling gatherSamples().
  */
-function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, &$context) {
+function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $context) {
   $context['finished'] = 1;
 
   // Stashing the nid in here so we can do a drupal_goto()
@@ -334,7 +334,7 @@ function rdfimporter_include_arc() {
 /**
  * Validate a SPARQL query string.
  */
-function rdfimporter_validate_sparql($query, &$errors = NULL) {
+function rdfimporter_validate_sparql($query, $errors = NULL) {
   $parser = ARC2::getSPARQLParser();
   $parser->parse($query);
 

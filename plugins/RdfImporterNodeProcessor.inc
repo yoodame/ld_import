@@ -123,7 +123,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
   /**
    * Override parent::configForm().
    */
-  public function configForm(&$form_state) {
+  public function configForm($form_state) {
     $form = parent::configForm($form_state);
     $form['arc_caching'] = array(
       '#type' => 'radios',

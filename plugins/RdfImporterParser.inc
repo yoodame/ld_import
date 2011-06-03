@@ -108,7 +108,7 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Based on the mapping source string, extract property values from the individual.
    */
-  public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
+  public function extractPropertyValues(RdfImporterIndividual $individual, $source, $items) {
 
     foreach (element_children($source) as $property_uri) {
 

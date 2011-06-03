@@ -168,7 +168,7 @@ class RdfImporterIndividual extends RdfImporterResource {
     $this->arc->setURI($this->uri);
     $props = $this->arc->getProps();
     if (!empty($props)) {
-      foreach ($props as $uri => &$prop) {
+      foreach ($props as $uri => $prop) {
         $prop = new RdfImporterProperty($uri, $this->uri, $this->arc, $this->language);
       }
     }
