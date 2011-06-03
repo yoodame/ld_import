@@ -9,9 +9,9 @@
  * gets passed around. This object handles all HTTP requests for
  * remote data and caches all the data it fetches. By passing around
  * this single instance, we can share all previously
- * fetched data and potentially save a whole lot of HTTP requests. 
+ * fetched data and potentially save a whole lot of HTTP requests.
  */
- 
+
 /**
  * Class definition for RdfImporterResult.
  */
@@ -19,7 +19,7 @@ class RdfImporterResult extends FeedsFetcherResult {
   public $uri_list;
   public $arc;
   public $samples;
-  
+
   public $sample_limit;
   public $fetch_labels;
   public $language;
@@ -29,21 +29,21 @@ class RdfImporterResult extends FeedsFetcherResult {
    * Constructor.
    */
   public function __construct($uri_list, ARC2_Resource $arc) {
-    parent::__construct();
+    parent::__construct($uri_list);
     $this->uri_list = $uri_list;
     $this->arc = $arc;
     $this->samples = array();
     $this->sample_limit = RDFIMPORTER_MAX_SAMPLES;
     $this->fetch_labels = FALSE;
-    
+
     // Get the current site language to limit content
     // to that language where possible.
     global $language;
     $this->language = $language->language;
-    
+
     $this->createTempFile();
   }
-  
+
   /**
    * Implementation of FeedsFetcherResult::getRaw();
    *
@@ -58,20 +58,20 @@ class RdfImporterResult extends FeedsFetcherResult {
     }
     return $individuals;
   }
-  
+
   /**
    *
    * Triggers data fetching and only returns an individual if it has properties.
    */
   public function shiftItem() {
     $this->current_item = NULL;
-    
+
     // Sometimes __wakeup() does not get called on unserialize()
     // and ARC is not automatically reloaded. Jump start it here...
     if (!isset($this->arc) || !is_object($this->arc)) {
       $this->loadArc();
     }
-    
+
     // Move through the URI list until we hit a URI that returns data.
     while ($uri = array_shift($this->items)) {
       $individual = new RdfImporterIndividual($uri, $this->arc, $this->language);
@@ -86,7 +86,7 @@ class RdfImporterResult extends FeedsFetcherResult {
     }
     return $this->current_item;
   }
-  
+
   /**
    * If a URI can't be fetched set a message.
    *
@@ -102,17 +102,17 @@ class RdfImporterResult extends FeedsFetcherResult {
       drupal_set_message($message, 'status');
     }
   }
-  
+
   /**
    * Attempt to create a temp file on the filesystem for caching between batch operations.
    */
   public function createTempFile() {
-    $this->temp_file = file_directory_temp() . '/rdfimporter_batch_' . md5(serialize($this->uri_list)) . '.tmp';
+    $this->temp_file =   'temporary:///rdfimporter_batch_' . md5(serialize($this->uri_list)) . '.tmp';
     if (!file_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE)) {
       drupal_set_message(t('RDFimporter: Could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'), 'warning', FALSE);
     }
   }
-  
+
   /**
    * Load a serialized ARC object from the temp file.
    *
@@ -128,7 +128,7 @@ class RdfImporterResult extends FeedsFetcherResult {
       unset($this->arc);
     }
   }
-  
+
   /**
    * Serialize the ARC object with all its data and save it to the temp file.
    */
@@ -138,18 +138,18 @@ class RdfImporterResult extends FeedsFetcherResult {
       unset($this->arc);
     }
   }
-  
+
   /**
    * Empty out the current item before serializing so ARC data is not saved to the database.
    */
   public function clearItem() {
     $this->current_item = NULL;
   }
-  
+
   /**
    * Make sure required ARC libraries are included after unserialize().
    *
-   * Due to the way ARC2 includes libraries, necessary classes 
+   * Due to the way ARC2 includes libraries, necessary classes
    * may not be available when a Feeds $batch gets serialized/unserialized.
    * Using __sleep() and __wakeup() we can ensure that everything
    * is loaded before reconstructing the ARC object.
@@ -162,13 +162,13 @@ class RdfImporterResult extends FeedsFetcherResult {
     ARC2::getRemoteStore();
     $this->loadArc();
   }
-  
+
   function __sleep() {
     $this->saveArc();
     $this->clearItem();
     // MUST return something here.
     return array_keys(get_object_vars($this));
   }
-  
+
 }
 
