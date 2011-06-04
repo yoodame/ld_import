@@ -36,9 +36,6 @@ class RdfImporterParser extends FeedsParser {
    * @todo Need to give some guidance if there are no samples/sources available.
    */
   public function getMappingSources() {
-    return FALSE;
-
-    /*
     $sources = array();
     $samples = $this->loadSamples();
 
@@ -70,10 +67,10 @@ class RdfImporterParser extends FeedsParser {
     $sources['label'] = array('name' => t('Resource label'), 'description' => t('Single label for a resource'));
     $sources['uri'] = array('name' => t('Resource URI'), 'description' => t('URI for a resource'));
 
-    drupal_alter('rdfimporter_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
+    #drupal_alter('rdfimporter_parser_sources', $sources, 'node', $this->config['content_type']););
+    feeds_alter('rdfimporter_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
 
     return array_reverse($sources);
-    */
   }
 
   /**
@@ -91,38 +88,34 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Implementation of FeedsParser::getSourceElement().
    */
-  public function getSourceElement($batch, $source) {
-    $individual = $batch->currentItem();
+  public function getSourceElement(FeedsSource $source, FeedsParserResult $result, $element_key) {
+    $individual = $result->currentItem();
 
-    if ($source == 'uri') {
+    if ($element_key == 'uri') {
       return $individual->getUri();
     }
-    if ($source == 'label') {
+    if ($element_key == 'label') {
       return $individual->getLabel();
     }
 
     $items = array();
-    $source = @unserialize($source);
-    if (is_array($source)) {
-      $this->extractPropertyValues($individual, $source, $items);
+    $element_key = @unserialize($element_key);
+    if (is_array($element_key)) {
+      $this->extractPropertyValues($individual, $element_key, $items);
       sort($items);
     }
 
     // If there is only a single value, return only the value instead of an array.
-    return (count($items) > 1) ? $items : reset($items);
+    return (count($items) > 1) ? $items : array_shift($items);
   }
 
   /**
    * Based on the mapping source string, extract property values from the individual.
    */
-  public function extractPropertyValues(RdfImporterIndividual $individual, $source, $items) {
-
+  public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
     foreach (element_children($source) as $property_uri) {
-
       if ($property = $individual->getProperty($property_uri)) {
-
         foreach ($property->getValues() as $item) {
-
           // If there are deeper nested properties, continue to drill down.
           if ($item->getType() == 'uri' && element_children($source[$property_uri])) {
             $target_individual = new RdfImporterIndividual($item->getValue(), $individual->arc, $individual->language);
@@ -223,8 +216,8 @@ class RdfImporterParser extends FeedsParser {
    */
   public function loadSamples() {
     $samples = array();
-    $query = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = ':id'", array(':id' => $this->id));
-    while ($result = $query->fetchField()) {
+    $results = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = :id", array(':id' => $this->id));
+    foreach ($results as $result) {
       $feed_source = feeds_source($this->id, $result->feed_nid);
       $config = $feed_source->getConfigFor($this);
       if (is_array($config['samples'])) {
