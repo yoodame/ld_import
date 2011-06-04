@@ -5,16 +5,16 @@
  * @file
  * Home of the RdfImporterSparqlFetcher.
  */
- 
-// The RdfImporterBatch class has been separated so it can
+
+// The RdfImporterFetcherResult class has been separated so it can
 // be used with multiple fetchers.
-require_once(dirname(__FILE__) .'/RdfImporterBatch.inc');
+require_once(dirname(__FILE__) .'/RdfImporterFetcherResult.inc');
 
 /**
  * Class definition for RdfImporterSparqlFetcher.
  */
 class RdfImporterSparqlFetcher extends FeedsFetcher {
-  
+
   /**
    * Implementation of FeedsFetcher::fetch().
    */
@@ -25,14 +25,14 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     );
     $arc = ARC2::getResource();
     $arc->setStore(ARC2::getRemoteStore($endpoint));
-    
+
     if ($this->config['enable_data_queries'] && !empty($source_config['data_query'])) {
       $this->getSourceData($source_config['data_query'], $arc);
     }
-    
-    return new RdfImporterBatch($this->getURIs($source_config), $arc);
+
+    return new RdfImporterFetcherResult($this->getURIs($source_config), $arc);
   }
-  
+
   /**
    * Build a list of URIs from the source config.
    */
@@ -56,7 +56,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     if (!empty($source_config['list_query'])) {
       $endpoint = ARC2::getRemoteStore(array('remote_store_endpoint' => $source_config['endpoint']));
       $results = $endpoint->query($source_config['list_query'], 'rows');
-      
+
       // Loop through the results and extract every value that's a URI.
       foreach ($results as $row) {
         foreach ($row as $key => $value) {
@@ -68,7 +68,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     }
     return array_values($uri_list);
   }
-  
+
   public function getSourceData($query, $arc) {
     $index = $arc->store->query($query, 'raw');
     if (count($index) > 1) {
@@ -80,7 +80,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       throw new Exception(t('Could not retrieve any data using the provided data query. !errors', array('!errors' => $errors)));
     }
   }
-  
+
   /**
    * Expose source form.
    *
@@ -129,25 +129,25 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
     );
     return $form;
   }
-  
+
   /**
    * Override parent::sourceFormValidate().
-   * 
+   *
    * @todo Validate query type (SELECT)
    */
-  public function sourceFormValidate($values) {
-    
+  public function sourceFormValidate(&$values) {
+
     // Validate the endpoint.
     if (!empty($values['endpoint']) && !valid_url($values['endpoint'], TRUE)) {
       form_set_error('feeds][RdfImporterSparqlFetcher][endpoint', t('The endpoint must be a valid URL.'));
     }
-    
+
     // Make sure there is at least one field is provided.
     if (empty($values['list']) && empty($values['list_query'])) {
       form_set_error('feeds][RdfImporterSparqlFetcher][list', t('Either a list of URIs or a SPARQL query is required.'));
       form_set_error('feeds][RdfImporterSparqlFetcher][list_query', '');
     }
-    
+
     // Validate the list of URIs.
     if (!empty($values['list'])) {
       $items = explode("\n", $values['list']);
@@ -163,21 +163,23 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
         form_set_error('feeds][RdfImporterSparqlFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
       }
     }
-    
+
     // Validate the SPARQL query.
-    if (!empty($values['list_query'])) {
-      if (!rdfimporter_validate_sparql($values['list_query'], $errors)) {
+    if (isset($values['list_query']) && !empty($values['list_query'])) {
+      $errors = array();
+      if (! rdfimporter_validate_sparql($values['list_query'], $errors) ) {
         form_set_error('feeds][RdfImporterSparqlFetcher][list_query', t('There is a problem with the SPARQL query.') . theme_item_list($errors));
       }
     }
     // Validate the SPARQL query.
-    if (!empty($values['data_query'])) {
+    if (isset($values['data_query']) && !empty($values['data_query'])) {
+      $errors = array();
       if (!rdfimporter_validate_sparql($values['data_query'], $errors)) {
         form_set_error('feeds][RdfImporterSparqlFetcher][data_query', t('There is a problem with the data query.') . theme_item_list($errors));
       }
     }
   }
-  
+
   /**
    * Override parent::configDefaults().
    */
@@ -186,7 +188,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       'enable_data_queries' => 0,
     );
   }
-  
+
   /**
    * Override parent::configForm().
    */
