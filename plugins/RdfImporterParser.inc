@@ -141,8 +141,6 @@ class RdfImporterParser extends FeedsParser {
    */
   public function gatherSamples(RdfImporterParserResult $parser_result) {
 
-    watchdog('debug', basename(__FILE__) . ":" . __FUNCTION__);
-
     $samples = ($parser_result->samples) ? $parser_result->samples : array();
     $max_samples = ($parser_result->sample_limit) ? $parser_result->sample_limit : RDFIMPORTER_MAX_SAMPLES;
 
@@ -226,7 +224,7 @@ class RdfImporterParser extends FeedsParser {
   public function loadSamples() {
     $samples = array();
     $query = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = ':id'", array(':id' => $this->id));
-    while ($result = $query->fetchField) {
+    while ($result = $query->fetchField()) {
       $feed_source = feeds_source($this->id, $result->feed_nid);
       $config = $feed_source->getConfigFor($this);
       if (is_array($config['samples'])) {
@@ -317,7 +315,7 @@ class RdfImporterParser extends FeedsParser {
     );
     if ($preview_table) {
       $form['preview']['samples_table'] = array(
-        '#value' => $preview_table,
+        '#markup' => '<div>' . $preview_table . '</div>',
       );
     }
     else {

@@ -222,9 +222,6 @@ function rdfimporter_refresh_preview_submit($form, $form_state) {
  * except instead of process() we're calling gatherSamples().
  */
 function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $context) {
-
-  watchdog('debug', basename(__FILE__) . ":" . __FUNCTION__);
-
   $context['finished'] = 1;
 
   // Stashing the nid in here so we can do a drupal_goto()
@@ -391,7 +388,7 @@ function theme_rdfimporter_samples($samples) {
         $items[$i] = theme('rdfimporter_sample', $item);
       }
 
-      $row[1] = theme('item_list', $items);
+      $row[1] = theme('item_list', array("items" => $items));
       $rows[] = $row;
     }
 
@@ -401,7 +398,7 @@ function theme_rdfimporter_samples($samples) {
       '0' => array('data' => t('RDF Property'), 'class' => 'first'),
       '1' => array('data' => t('Sample'), 'class' => 'second'),
     );
-    $output = theme('table', $header, $rows, array('class' => 'rdfimporter-samples'));
+    $output = theme('table', array("header" => $header, "rows" => $rows, "attributes" => array('class' => array('rdfimporter-samples'))));
   }
   return $output;
 }
