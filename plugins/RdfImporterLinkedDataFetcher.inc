@@ -5,23 +5,23 @@
  * @file
  * Home of the RdfImporterLinkedDataFetcher.
  */
- 
-// The RdfImporterBatch class has been separated so it can
+
+// The RdfImporterFetcherResult class has been separated so it can
 // be used with multiple fetchers.
-require_once(dirname(__FILE__) .'/RdfImporterBatch.inc');
+require_once(dirname(__FILE__) .'/RdfImporterFetcherResult.inc');
 
 /**
  * Class definition for RdfImporterLinkedDataFetcher.
  */
 class RdfImporterLinkedDataFetcher extends FeedsFetcher {
-  
+
   /**
    * Implementation of FeedsFetcher::fetch().
    */
   public function fetch(FeedsSource $source) {
-    return new RdfImporterBatch($this->getURIs($source), ARC2::getResource());
+    return new RdfImporterFetcherResult($this->getURIs($source), ARC2::getResource());
   }
-  
+
   /**
    * Get the list of URIs entered by the user.
    */
@@ -44,7 +44,7 @@ class RdfImporterLinkedDataFetcher extends FeedsFetcher {
     }
     return array_values($uri_list);
   }
-  
+
   /**
    * Expose source form.
    */
@@ -60,10 +60,12 @@ class RdfImporterLinkedDataFetcher extends FeedsFetcher {
     );
     return $form;
   }
-  
+
+
+
   /**
    * Override parent::sourceFormValidate().
-   * 
+   *
    * @todo Invalid form elements are not being highlighted
    */
   public function sourceFormValidate(&$values) {

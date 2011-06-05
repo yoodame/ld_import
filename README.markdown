@@ -31,12 +31,11 @@ Features
 
 Requirements
 ============
-- **Drupal 6.x**
+- **Drupal 7.x**
 - **Feeds module** + dependencies
 - **ARC2 PHP library**
 
 **NOTE:** Some system settings for PHP and MySQL may also need to be changed. See the INSTALL.markdown file for more details.
-
 
 Installation and usage
 ======================
@@ -72,6 +71,7 @@ Some future plans
 - Allow single nodes to be updated/re-imported independently.
 - Make the mapping screen much easier to use, possibly by using JavaScript-based visual mapping.
 - Come up with a way to import RDFa. ARC2 can parse it already, but the structure can be a little funny.
+- Handle multi-valued fields.
 
 
 Other modules

@@ -11,9 +11,11 @@
  * Properties available for mapping are determined by the
  * properties in the feed preview
  */
- 
+
 define('RDFIMPORTER_MAX_SAMPLES', 4);
 define('RDFIMPORTER_PREVIEW_FETCH_LIMIT', 0);
+
+require_once(dirname(__FILE__) .'/RdfImporterParserResult.inc');
 
 /**
  * Class definition for RdfImporterParser.
@@ -23,10 +25,11 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Implementation of FeedsParser::parse().
    */
-  public function parse(FeedsImportBatch $batch, FeedsSource $source) {
-    $batch->setItems($batch->getRaw());
+  public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
+    $items = $fetcher_result->getRaw();
+    return new RdfImporterParserResult($items, $fetcher_result->arc);
   }
-  
+
   /**
    * Implementation of FeedsParser::getMappingSources().
    *
@@ -35,11 +38,11 @@ class RdfImporterParser extends FeedsParser {
   public function getMappingSources() {
     $sources = array();
     $samples = $this->loadSamples();
-    
+
     foreach ($samples as $uri => $property) {
       // When sample arrays get merged, the label can become an array instead of a string.
       $name = is_array($property['label']) ? $property['label'][0] : $property['label'];
-      
+
       if ($item = reset($property['values'])) {
         switch ($item['type']) {
           case 'uri':
@@ -60,15 +63,16 @@ class RdfImporterParser extends FeedsParser {
 
     uasort($sources, array($this, 'sortSources'));
     $sources = array_reverse($sources);
-    
+
     $sources['label'] = array('name' => t('Resource label'), 'description' => t('Single label for a resource'));
     $sources['uri'] = array('name' => t('Resource URI'), 'description' => t('URI for a resource'));
-    
-    drupal_alter('rdfimporter_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
-    
+
+    #drupal_alter('rdfimporter_parser_sources', $sources, 'node', $this->config['content_type']););
+    feeds_alter('rdfimporter_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
+
     return array_reverse($sources);
   }
-  
+
   /**
    * Create a serialized source array to represent an RDF property
    */
@@ -80,42 +84,38 @@ class RdfImporterParser extends FeedsParser {
       return serialize(array($uri => array()));
     }
   }
-  
+
   /**
    * Implementation of FeedsParser::getSourceElement().
    */
-  public function getSourceElement($batch, $source) {
-    $individual = $batch->currentItem();
-    
-    if ($source == 'uri') {
+  public function getSourceElement(FeedsSource $source, FeedsParserResult $result, $element_key) {
+    $individual = $result->currentItem();
+
+    if ($element_key == 'uri') {
       return $individual->getUri();
     }
-    if ($source == 'label') {
+    if ($element_key == 'label') {
       return $individual->getLabel();
     }
-    
+
     $items = array();
-    $source = @unserialize($source);
-    if (is_array($source)) {
-      $this->extractPropertyValues($individual, $source, $items);
+    $element_key = @unserialize($element_key);
+    if (is_array($element_key)) {
+      $this->extractPropertyValues($individual, $element_key, $items);
       sort($items);
     }
-    
+
     // If there is only a single value, return only the value instead of an array.
-    return (count($items) > 1) ? $items : reset($items);
+    return (count($items) > 1) ? $items : array_shift($items);
   }
-  
+
   /**
    * Based on the mapping source string, extract property values from the individual.
    */
   public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
-
     foreach (element_children($source) as $property_uri) {
-
       if ($property = $individual->getProperty($property_uri)) {
-
         foreach ($property->getValues() as $item) {
-
           // If there are deeper nested properties, continue to drill down.
           if ($item->getType() == 'uri' && element_children($source[$property_uri])) {
             $target_individual = new RdfImporterIndividual($item->getValue(), $individual->arc, $individual->language);
@@ -128,40 +128,41 @@ class RdfImporterParser extends FeedsParser {
       }
     }
   }
-  
+
   /**
    * Gather sample data for all an individual's properties and save it in the batch.
    */
-  public function gatherSamples(FeedsImportBatch $batch) {
-    $samples = ($batch->samples) ? $batch->samples : array();
-    $max_samples = ($batch->sample_limit) ? $batch->sample_limit : RDFIMPORTER_MAX_SAMPLES;
-    
-    $individual = $batch->shiftItem();
-    
+  public function gatherSamples(RdfImporterParserResult $parser_result) {
+
+    $samples = ($parser_result->samples) ? $parser_result->samples : array();
+    $max_samples = ($parser_result->sample_limit) ? $parser_result->sample_limit : RDFIMPORTER_MAX_SAMPLES;
+
+    $individual = $parser_result->shiftItem();
+
     foreach ($individual->getSamples() as $uri => $item) {
-      
+
       // Only add samples for this property if it hasn't been saved yet or we still need more values.
       if (!isset($samples[$uri]) || (count($samples[$uri]['values']) < $max_samples)) {
-        
+
         if (!isset($samples[$uri])) {
-          $batch->arc->setURI($uri);
+          $parser_result->arc->setURI($uri);
           // If enabled, try to get a label for each property URI, otherwise make one.
-          if ($batch->fetch_labels) {
-            $label = $batch->arc->getPropValue(RDFS_LABEL_URI);
-            $label = ($label) ? $label : $batch->arc->extractTermLabel($uri);
+          if ($parser_result->fetch_labels) {
+            $label = $parser_result->arc->getPropValue(RDFS_LABEL_URI);
+            $label = ($label) ? $label : $parser_result->arc->extractTermLabel($uri);
           }
           else {
-            $label = $batch->arc->extractTermLabel($uri);
+            $label = $parser_result->arc->extractTermLabel($uri);
           }
           $samples[$uri] = array();
           $samples[$uri]['label'] = $label;
           $samples[$uri]['values'] = array();
         }
-        
+
         // Fetch a label for object properties only if enabled.
         $label = '';
         if ($item->getType() == 'uri') {
-          if ($batch->fetch_labels) {
+          if ($parser_result->fetch_labels) {
             $label = $item->getLabel();
             $label = $this->trimSample($label);
           }
@@ -171,52 +172,52 @@ class RdfImporterParser extends FeedsParser {
           $label = '';
           $value = $this->trimSample($item->getValue());
         }
-        
+
         // Reduce duplicates by using hashes as keys.
         $key = md5(serialize($value));
         $samples[$uri]['values'][$key]['type'] = $item->getType();
         $samples[$uri]['values'][$key]['value'] = $value;
-        $samples[$uri]['values'][$key]['label'] = $label; 
+        $samples[$uri]['values'][$key]['label'] = $label;
 
         // If we hit the sample limit, move on to next property.
         if (count($samples[$uri]['values']) == $max_samples) {
           continue;
-        } 
+        }
       }
     }
 
     // Samples are being saved in the source column of feeds_source,
-    // and the data type is 'text', which holds ~65k characters.    
+    // and the data type is 'text', which holds ~65k characters.
     // This is a dirty workaround to avoid hitting character limits.
     if(strlen(serialize($samples)) > 60000) {
       drupal_set_message(t('RDFimporter: The import preview ran successfully but had to end a little prematurely due to size limitations. The sample data shown may not be complete. You can try setting a lower number of samples per property.'), 'warning', FALSE);
       return FALSE;
     }
     else {
-      $batch->samples = $samples;  
+      $parser_result->samples = $samples;
       return TRUE;
     }
   }
-  
+
   /**
    * Save sample data to the current $source config so it gets saved to the database.
    */
-  public function saveSamples(FeedsImportBatch $batch, FeedsSource $source) {
+  public function saveSamples(RdfImporterParserResult $parser_result, FeedsSource $source) {
     $config = $source->getConfig();
     $class = get_class($this);
-    $config[$class]['samples'] = $batch->samples;
+    $config[$class]['samples'] = $parser_result->samples;
     $config[$class]['last_updated'] = time();
     $source->setConfig($config);
     $source->save();
   }
-  
+
   /**
    * Load samples for all feed nodes that use the current importer.
    */
   public function loadSamples() {
     $samples = array();
-    $query = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = '%s'", $this->id);
-    while ($result = db_fetch_object($query)) {
+    $results = db_query("SELECT feed_nid FROM {feeds_source} WHERE id = :id", array(':id' => $this->id));
+    foreach ($results as $result) {
       $feed_source = feeds_source($this->id, $result->feed_nid);
       $config = $feed_source->getConfigFor($this);
       if (is_array($config['samples'])) {
@@ -225,39 +226,39 @@ class RdfImporterParser extends FeedsParser {
     }
     return $samples;
   }
-  
+
   /**
    * Helper function to keep sample data short.
    */
-  public function trimSample($string, $max = 80, $delimeter = '...') { 
-    
+  public function trimSample($string, $max = 80, $delimeter = '...') {
+
     // If the string is a URI just return it whole.
     if (rdfimporter_validate_uri($string)) return $string;
-    
+
     $string = check_plain($string);
-    if (strlen($string) > $max) { 
+    if (strlen($string) > $max) {
        // Try to trim cleanly.
-       preg_match('/(.{' . $max . '}.*?)\b/', $string, $matches); 
-       return rtrim($matches[1]) . $delimeter; 
-    } 
-    else { 
-       return $string; 
-    } 
+       preg_match('/(.{' . $max . '}.*?)\b/', $string, $matches);
+       return rtrim($matches[1]) . $delimeter;
+    }
+    else {
+       return $string;
+    }
   }
-  
+
   /**
    * uasort() callback for sorting the array of mapping sources
    */
   public function sortSources($a, $b) {
     return strcasecmp($a['name'], $b['name']);
   }
-  
+
   /**
    * Expose source form.
    */
   public function sourceForm($source_config) {
     drupal_add_css(drupal_get_path('module', 'rdfimporter') . '/rdfimporter.css');
-    
+
     $form = array();
     $form['fetch_limit'] = array(
       '#type' => 'select',
@@ -288,13 +289,13 @@ class RdfImporterParser extends FeedsParser {
       '#type' => 'value',
       '#value' => !empty($source_config['last_updated']) ? $source_config['last_updated'] : '',
     );
-    
+
     $samples = isset($source_config['samples']) ? $source_config['samples'] : '';
     $updated = isset($source_config['last_updated']) ? $source_config['last_updated'] : '';
     $preview_table = (is_array($samples) && count($samples)) ? theme_rdfimporter_samples($samples) : '';
-    
+
     // Need to disable #tree structure here because Feeds will
-    // use array_keys() on this form to find config variables. 
+    // use array_keys() on this form to find config variables.
     $form['preview'] = array(
       '#type' => 'fieldset',
       '#title' => t('Preview'),
@@ -307,7 +308,7 @@ class RdfImporterParser extends FeedsParser {
     );
     if ($preview_table) {
       $form['preview']['samples_table'] = array(
-        '#value' => $preview_table,
+        '#markup' => '<div>' . $preview_table . '</div>',
       );
     }
     else {
