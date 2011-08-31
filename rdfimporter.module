@@ -116,7 +116,7 @@ function rdfimporter_feeds_plugins() {
  * must be added here with an alter because the source form itself has no
  * awareness of the active importer or feed nid.
  */
-function rdfimporter_form_alter($form, $form_state, $form_id) {
+function rdfimporter_form_alter(&$form, $form_state, $form_id) {
   if ($form['#id'] == 'node-form' || $form['#id'] == 'feeds-import-form') {
 
     $form['feeds']['#title'] = t('RDF import');
@@ -148,9 +148,9 @@ function rdfimporter_form_alter($form, $form_state, $form_id) {
       // If there is sample data, also add an "Edit mappings" link.
       if (isset($form['feeds']['RdfImporterParser']['preview']['samples_table'])) {
         $form['feeds']['RdfImporterParser']['mappings_link'] = array(
-          '#prefix' => '<em>',
-          '#value' => l('Edit mappings', 'admin/build/feeds/edit/' . $importer_id . '/mapping'),
-          '#suffix' => '</em>',
+          '#prefix' => '<p>',
+          '#markup' => l('Edit mappings', 'admin/structure/feeds/edit/' . $importer_id . '/mapping'),
+          '#suffix' => '</p>',
           '#weight' => -15,
         );
       }
