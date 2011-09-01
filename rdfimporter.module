@@ -7,21 +7,6 @@
  */
 
 /**
- * Implementation of hook_menu().
- */
-function rdfimporter_menu() {
-  $items = array();
-  $items['rdfimporter/testing'] = array(
-    'title' => 'Testing Area',
-    'page callback' => 'rdfimporter_test_page',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'rdfimporter.test.inc',
-  );
-  return $items;
-}
-
-/**
  * Implementation of hook_init().
  */
 function rdfimporter_init() {
