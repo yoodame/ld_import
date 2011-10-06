@@ -3,23 +3,23 @@
 
 /**
  * @file
- * Home of the RdfImporterLinkedDataFetcher.
+ * Home of the LinkedDataImportSimpleFetcher.
  */
 
-// The RdfImporterFetcherResult class has been separated so it can
+// The LinkedDataImportFetcherResult class has been separated so it can
 // be used with multiple fetchers.
-require_once(dirname(__FILE__) .'/RdfImporterFetcherResult.inc');
+require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
 
 /**
- * Class definition for RdfImporterLinkedDataFetcher.
+ * Class definition for LinkedDataImportSimpleFetcher.
  */
-class RdfImporterLinkedDataFetcher extends FeedsFetcher {
+class LinkedDataImportSimpleFetcher extends FeedsFetcher {
 
   /**
    * Implementation of FeedsFetcher::fetch().
    */
   public function fetch(FeedsSource $source) {
-    return new RdfImporterFetcherResult($this->getURIs($source), ARC2::getResource());
+    return new LinkedDataImportFetcherResult($this->getURIs($source), ARC2::getResource());
   }
 
   /**
@@ -35,7 +35,7 @@ class RdfImporterLinkedDataFetcher extends FeedsFetcher {
       if (!empty($items)) {
         foreach ($items as $v) {
           $v = trim($v);
-          if (!empty($v) && rdfimporter_validate_uri($v)) {
+          if (!empty($v) && ld_import_validate_uri($v)) {
             // Reduce duplicates.
             $uri_list[$v] = $v;
           }
@@ -75,13 +75,13 @@ class RdfImporterLinkedDataFetcher extends FeedsFetcher {
       if (!empty($items)) {
         foreach ($items as $v) {
           $v = trim($v);
-          if (!empty($v) && !rdfimporter_validate_uri($v)) {
-            form_set_error('feeds][RdfImporterLinkedDataFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
+          if (!empty($v) && !ld_import_validate_uri($v)) {
+            form_set_error('feeds][LinkedDataImportSimpleFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
           }
         }
       }
       else {
-        form_set_error('feeds][RdfImporterLinkedDataFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
+        form_set_error('feeds][LinkedDataImportSimpleFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
       }
     }
   }

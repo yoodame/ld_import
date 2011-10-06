@@ -3,8 +3,8 @@
 
 /**
  * @file
- * Definitions for RdfImporterResource, RdfImporterIndividual,
- * RdfImporterProperty, and RdfImporterPropertyValue classes.
+ * Definitions for LinkedDataImportResource, LinkedDataImportIndividual,
+ * LinkedDataImportProperty, and LinkedDataImportPropertyValue classes.
  *
  * These classes are mainly wrappers around the functionality
  * provided by an ARC2_Resource object
@@ -14,9 +14,9 @@
 define('RDFS_LABEL_URI', 'http://www.w3.org/2000/01/rdf-schema#label');
 
 /**
- * Class definition for RdfImporterResource.
+ * Class definition for LinkedDataImportResource.
  */
-class RdfImporterResource {
+class LinkedDataImportResource {
   protected $uri;
   protected $label;
   protected $language;
@@ -42,7 +42,7 @@ class RdfImporterResource {
   }
 
   public function setArc() {
-    rdfimporter_include_arc();
+    ld_import_include_arc();
     $this->arc = ARC2::getResource();
   }
 
@@ -136,9 +136,9 @@ class RdfImporterResource {
 }
 
 /**
- * Class definition for RdfImporterIndividual.
+ * Class definition for LinkedDataImportIndividual.
  */
-class RdfImporterIndividual extends RdfImporterResource {
+class LinkedDataImportIndividual extends LinkedDataImportResource {
   protected $properties;
 
   public function __construct($uri = NULL, $arc = NULL, $site_language = NULL) {
@@ -170,7 +170,7 @@ class RdfImporterIndividual extends RdfImporterResource {
     $props = $this->arc->getProps();
     if (!empty($props)) {
       foreach ($props as $uri => $prop) {
-        $this->properties[$uri] = new RdfImporterProperty($uri, $this->uri, $this->arc, $this->language);
+        $this->properties[$uri] = new LinkedDataImportProperty($uri, $this->uri, $this->arc, $this->language);
       }
     }
   }
@@ -185,16 +185,16 @@ class RdfImporterIndividual extends RdfImporterResource {
     foreach ($props as $uri => $values) {
       // Try to find a property value in the target language, otherwise just use the first one
       $item = ($filtered = $this->filterLanguage($values)) ? $filtered[array_rand($filtered)] : $values[array_rand($values)];
-      $samples[$uri] = new RdfImporterPropertyValue($item, $this->arc, $this->language);
+      $samples[$uri] = new LinkedDataImportPropertyValue($item, $this->arc, $this->language);
     }
     return $samples;
   }
 }
 
 /**
- * Class definition for RdfImporterProperty.
+ * Class definition for LinkedDataImportProperty.
  */
-class RdfImporterProperty extends RdfImporterResource {
+class LinkedDataImportProperty extends LinkedDataImportResource {
   protected $individual_uri;
   protected $values;
 
@@ -229,16 +229,16 @@ class RdfImporterProperty extends RdfImporterResource {
       $values = ($filtered = $this->filterLanguage($values)) ? $filtered : array();
     }
     foreach ($values as $uri => $value) {
-      $values[$uri] = new RdfImporterPropertyValue($value, $this->arc, $this->language);
+      $values[$uri] = new LinkedDataImportPropertyValue($value, $this->arc, $this->language);
     }
     $this->values = $values;
   }
 }
 
 /**
- * Class definition for RdfImporterPropertyValue.
+ * Class definition for LinkedDataImportPropertyValue.
  */
-class RdfImporterPropertyValue extends RdfImporterResource {
+class LinkedDataImportPropertyValue extends LinkedDataImportResource {
   protected $item;
 
   public function __construct($item, $arc = NULL, $site_language = NULL) {

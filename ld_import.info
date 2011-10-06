@@ -1,0 +1,9 @@
+; $Id:$
+name = "Linked Data Import"
+description = "A set of Feeds plugins used to import remote Linked Data content via SPARQL or content negotiation"
+package = Feeds
+dependencies[] = feeds
+core = 7.x
+php = 5.2
+
+

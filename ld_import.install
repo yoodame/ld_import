@@ -11,18 +11,18 @@
  *
  * Clear the cache to display in Feeds plugin list.
  */
-function rdfimporter_enable() {
+function ld_import_enable() {
   cache_clear_all('plugins:feeds:plugins', 'cache');
 }
 
 /**
  * Implementation of hook_install().
  *
- * RDFimporter needs to run AFTER the Feeds module for things
+ * Linked Data Import needs to run AFTER the Feeds module for things
  * like hook_form_alter(). Setting the module weight higher
  * than Feeds should take care of this.
  */
-function rdfimporter_install() {
+function ld_import_install() {
   $feeds_weight = (int) db_query("SELECT weight FROM {system} WHERE name = 'feeds' AND type = 'module'")->fetchField;
-  db_query("UPDATE {system} SET weight = :weight WHERE name = 'rdfimporter' AND type = 'module'", array(':weight' => $weight + 10))->fetchField;
+  db_query("UPDATE {system} SET weight = :weight WHERE name = 'ld_import' AND type = 'module'", array(':weight' => $weight + 10))->fetchField;
 }

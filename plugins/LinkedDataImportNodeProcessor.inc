@@ -8,12 +8,12 @@
 
 // NOTE: The batch size must be greater than 1 otherwise
 // progress gets calculated incorrectly.
-define('RDFIMPORTER_NODE_BATCH_SIZE', 10);
+define('LD_IMPORT_NODE_BATCH_SIZE', 10);
 
 /**
- * Class definition for RdfImporterNodeProcessor.
+ * Class definition for LinkedDataImportNodeProcessor.
  */
-class RdfImporterNodeProcessor extends FeedsNodeProcessor {
+class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
 
   /**
    * Override parent::process().
@@ -68,7 +68,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
     self::loadMappers();
 
     // Let other modules expose mapping targets.
-    feeds_alter('rdfimporter_node_processor_targets', $targets, 'node', $this->config['content_type']);
+    feeds_alter('ld_import_node_processor_targets', $targets, 'node', $this->config['content_type']);
 
     return $targets;
   }
@@ -90,7 +90,7 @@ class RdfImporterNodeProcessor extends FeedsNodeProcessor {
   public function configDefaults() {
     $defaults = parent::configDefaults();
     $defaults['arc_caching'] = 1;
-    $defaults['batch_size'] = RDFIMPORTER_NODE_BATCH_SIZE;
+    $defaults['batch_size'] = LD_IMPORT_NODE_BATCH_SIZE;
     return $defaults;
   }
 

@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Home of the RdfImporterFetcherResult.
+ * Home of the LinkedDataImportFetcherResult.
  *
  * Throughout the processing stage, a single ARC_Resource object
  * gets passed around. This object handles all HTTP requests for
@@ -13,9 +13,9 @@
  */
 
 /**
- * Class definition for RdfImporterResult.
+ * Class definition for LinkedDataImportResult.
  */
-class RdfImporterFetcherResult extends FeedsFetcherResult {
+class LinkedDataImportFetcherResult extends FeedsFetcherResult {
   public $uri_list;
   public $arc;
   public $samples;

@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Home of the RdfImporterParser.
+ * Home of the LinkedDataImportParser.
  *
  * This is where the feed preview data is assembled
  * and where the form to display that data gets constructed.
@@ -12,22 +12,22 @@
  * properties in the feed preview
  */
 
-define('RDFIMPORTER_MAX_SAMPLES', 4);
-define('RDFIMPORTER_PREVIEW_FETCH_LIMIT', 0);
+define('LD_IMPORT_MAX_SAMPLES', 4);
+define('LD_IMPORT_PREVIEW_FETCH_LIMIT', 0);
 
-require_once(dirname(__FILE__) .'/RdfImporterParserResult.inc');
+require_once(dirname(__FILE__) .'/LinkedDataImportParserResult.inc');
 
 /**
- * Class definition for RdfImporterParser.
+ * Class definition for LinkedDataImportParser.
  */
-class RdfImporterParser extends FeedsParser {
+class LinkedDataImportParser extends FeedsParser {
 
   /**
    * Implementation of FeedsParser::parse().
    */
   public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
     $items = $fetcher_result->getRaw();
-    return new RdfImporterParserResult($items, $fetcher_result->arc);
+    return new LinkedDataImportParserResult($items, $fetcher_result->arc);
   }
 
   /**
@@ -67,8 +67,8 @@ class RdfImporterParser extends FeedsParser {
     $sources['label'] = array('name' => t('Resource label'), 'description' => t('Single label for a resource'));
     $sources['uri'] = array('name' => t('Resource URI'), 'description' => t('URI for a resource'));
 
-    #drupal_alter('rdfimporter_parser_sources', $sources, 'node', $this->config['content_type']););
-    feeds_alter('rdfimporter_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
+    #drupal_alter('ld_import_parser_sources', $sources, 'node', $this->config['content_type']););
+    feeds_alter('ld_import_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
 
     return array_reverse($sources);
   }
@@ -112,13 +112,13 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Based on the mapping source string, extract property values from the individual.
    */
-  public function extractPropertyValues(RdfImporterIndividual $individual, $source, &$items) {
+  public function extractPropertyValues(LinkedDataImportIndividual $individual, $source, &$items) {
     foreach (element_children($source) as $property_uri) {
       if ($property = $individual->getProperty($property_uri)) {
         foreach ($property->getValues() as $item) {
           // If there are deeper nested properties, continue to drill down.
           if ($item->getType() == 'uri' && element_children($source[$property_uri])) {
-            $target_individual = new RdfImporterIndividual($item->getValue(), $individual->arc, $individual->language);
+            $target_individual = new LinkedDataImportIndividual($item->getValue(), $individual->arc, $individual->language);
             $this->extractPropertyValues($target_individual, $source[$property_uri], $items);
           }
           else {
@@ -132,12 +132,17 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Gather sample data for all an individual's properties and save it in the batch.
    */
-  public function gatherSamples(RdfImporterParserResult $parser_result) {
+  public function gatherSamples(LinkedDataImportParserResult $parser_result) {
 
     $samples = ($parser_result->samples) ? $parser_result->samples : array();
-    $max_samples = ($parser_result->sample_limit) ? $parser_result->sample_limit : RDFIMPORTER_MAX_SAMPLES;
+    $max_samples = ($parser_result->sample_limit) ? $parser_result->sample_limit : LD_IMPORT_MAX_SAMPLES;
 
     $individual = $parser_result->shiftItem();
+    
+    if (!$individual) {
+      drupal_set_message(t('Linked Data Import: There was a problem while gathering preview data.'), 'warning', FALSE);
+      return FALSE;
+    }
 
     foreach ($individual->getSamples() as $uri => $item) {
 
@@ -190,7 +195,7 @@ class RdfImporterParser extends FeedsParser {
     // and the data type is 'text', which holds ~65k characters.
     // This is a dirty workaround to avoid hitting character limits.
     if(strlen(serialize($samples)) > 60000) {
-      drupal_set_message(t('RDFimporter: The import preview ran successfully but had to end a little prematurely due to size limitations. The sample data shown may not be complete. You can try setting a lower number of samples per property.'), 'warning', FALSE);
+      drupal_set_message(t('Linked Data Import: The import preview ran successfully but had to end a little prematurely due to size limitations. The sample data shown may not be complete. You can try setting a lower number of samples per property.'), 'warning', FALSE);
       return FALSE;
     }
     else {
@@ -202,7 +207,7 @@ class RdfImporterParser extends FeedsParser {
   /**
    * Save sample data to the current $source config so it gets saved to the database.
    */
-  public function saveSamples(RdfImporterParserResult $parser_result, FeedsSource $source) {
+  public function saveSamples(LinkedDataImportParserResult $parser_result, FeedsSource $source) {
     $config = $source->getConfig();
     $class = get_class($this);
     $config[$class]['samples'] = $parser_result->samples;
@@ -233,7 +238,7 @@ class RdfImporterParser extends FeedsParser {
   public function trimSample($string, $max = 80, $delimeter = '...') {
 
     // If the string is a URI just return it whole.
-    if (rdfimporter_validate_uri($string)) return $string;
+    if (ld_import_validate_uri($string)) return $string;
 
     $string = check_plain($string);
     if (strlen($string) > $max) {
@@ -257,7 +262,7 @@ class RdfImporterParser extends FeedsParser {
    * Expose source form.
    */
   public function sourceForm($source_config) {
-    drupal_add_css(drupal_get_path('module', 'rdfimporter') . '/rdfimporter.css');
+    drupal_add_css(drupal_get_path('module', 'ld_import') . '/ld_import.css');
 
     $form = array();
     $form['fetch_limit'] = array(
@@ -265,14 +270,14 @@ class RdfImporterParser extends FeedsParser {
       '#title' => t('Preview item limit'),
       '#description' => t('Maximum number of URIs to fetch for previewing.'),
       '#options' => drupal_map_assoc(array(t('No limit'),1,2,3,4,5,10,15,20,50,100)),
-      '#default_value' => !empty($source_config['fetch_limit']) ? $source_config['fetch_limit'] : RDFIMPORTER_PREVIEW_FETCH_LIMIT,
+      '#default_value' => !empty($source_config['fetch_limit']) ? $source_config['fetch_limit'] : LD_IMPORT_PREVIEW_FETCH_LIMIT,
     );
     $form['sample_limit'] = array(
       '#type' => 'select',
       '#title' => t('Preview samples per property'),
       '#description' => t('Number of sample values to fetch for each different property.'),
       '#options' => drupal_map_assoc(array(1,2,3,4,5,6,7,8,9,10)),
-      '#default_value' => !empty($source_config['sample_limit']) ? $source_config['sample_limit'] : RDFIMPORTER_MAX_SAMPLES,
+      '#default_value' => !empty($source_config['sample_limit']) ? $source_config['sample_limit'] : LD_IMPORT_MAX_SAMPLES,
     );
     $form['fetch_labels'] = array(
       '#type' => 'radios',
@@ -292,7 +297,7 @@ class RdfImporterParser extends FeedsParser {
 
     $samples = isset($source_config['samples']) ? $source_config['samples'] : '';
     $updated = isset($source_config['last_updated']) ? $source_config['last_updated'] : '';
-    $preview_table = (is_array($samples) && count($samples)) ? theme_rdfimporter_samples($samples) : '';
+    $preview_table = (is_array($samples) && count($samples)) ? theme_ld_import_samples($samples) : '';
 
     // Need to disable #tree structure here because Feeds will
     // use array_keys() on this form to find config variables.
@@ -301,7 +306,7 @@ class RdfImporterParser extends FeedsParser {
       '#title' => t('Preview'),
       '#collapsible' => TRUE,
       '#collapsed' => (($updated) && (time() - $updated) > 600) ? TRUE : FALSE,
-      '#attributes' => array('id' => 'rdfimporter-preview'),
+      '#attributes' => array('id' => 'ld_import-preview'),
       '#description' => ($preview_table) ? t('Last updated '. format_interval(time() - $updated, 2) . ' ago') : '',
       '#tree' => FALSE,
       '#weight' => -5,
@@ -322,7 +327,7 @@ class RdfImporterParser extends FeedsParser {
       '#type' => 'submit',
       '#name' => 'refresh',
       '#value' => t('Save and refresh preview'),
-      '#submit' => array('rdfimporter_refresh_preview_submit'),
+      '#submit' => array('ld_import_refresh_preview_submit'),
       '#executes_submit_callback' => TRUE,
     );
     $form['warning'] = array(

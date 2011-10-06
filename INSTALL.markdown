@@ -1,8 +1,8 @@
 Requirements
 ============
 
-- **Drupal 6.x**
-- **[Feeds module][feeds]** - tested with version 6.x-1.0-beta10
+- **Drupal 7.x**
+- **[Feeds module][feeds]** - tested with version 7.x-2.0-alpha4
   - **[Chaos tool suite (CTools) module][ctools]** - Feeds dependency
   - **[Job Scheduler module][jobscheduler]** - Feeds dependency
   - **Feeds UI module** (included with Feeds) - needed for configuring imports, but not required for RDFimporter to function
@@ -29,7 +29,7 @@ Installation
    
    - If you use the RDF module, or other modules that utilize ARC, it should be available to RDFimporter already.
    - (Using Libraries module) Unpack (or git clone) the ARC2 bundle into either "sites/all/libraries/arc" or "sites/<sitename>/libraries/arc"
-   - Unpack or clone the ARC2 bundle directly into "modules/rdfimporter/arc"
+   - Unpack or clone the ARC2 bundle directly into "modules/ld_import/arc"
 
    Drupal will show a notice if RDFimporter has trouble finding ARC.
 

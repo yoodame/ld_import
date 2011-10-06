@@ -3,17 +3,17 @@
 
 /**
  * @file
- * Home of the RdfImporterSparqlFetcher.
+ * Home of the LinkedDataImportSparqlFetcher.
  */
 
-// The RdfImporterFetcherResult class has been separated so it can
+// The LinkedDataImportFetcherResult class has been separated so it can
 // be used with multiple fetchers.
-require_once(dirname(__FILE__) .'/RdfImporterFetcherResult.inc');
+require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
 
 /**
- * Class definition for RdfImporterSparqlFetcher.
+ * Class definition for LinkedDataImportSparqlFetcher.
  */
-class RdfImporterSparqlFetcher extends FeedsFetcher {
+class LinkedDataImportSparqlFetcher extends FeedsFetcher {
 
   /**
    * Implementation of FeedsFetcher::fetch().
@@ -30,7 +30,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       $this->getSourceData($source_config['data_query'], $arc);
     }
 
-    return new RdfImporterFetcherResult($this->getURIs($source_config), $arc);
+    return new LinkedDataImportFetcherResult($this->getURIs($source_config), $arc);
   }
 
   /**
@@ -45,7 +45,7 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       if (!empty($items)) {
         foreach ($items as $v) {
           $v = trim($v);
-          if (!empty($v) && rdfimporter_validate_uri($v)) {
+          if (!empty($v) && ld_import_validate_uri($v)) {
             $uri_list[$v] = $v;
           }
         }
@@ -139,13 +139,13 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
 
     // Validate the endpoint.
     if (!empty($values['endpoint']) && !valid_url($values['endpoint'], TRUE)) {
-      form_set_error('feeds][RdfImporterSparqlFetcher][endpoint', t('The endpoint must be a valid URL.'));
+      form_set_error('feeds][LinkedDataImportSparqlFetcher][endpoint', t('The endpoint must be a valid URL.'));
     }
 
     // Make sure there is at least one field is provided.
     if (empty($values['list']) && empty($values['list_query'])) {
-      form_set_error('feeds][RdfImporterSparqlFetcher][list', t('Either a list of URIs or a SPARQL query is required.'));
-      form_set_error('feeds][RdfImporterSparqlFetcher][list_query', '');
+      form_set_error('feeds][LinkedDataImportSparqlFetcher][list', t('Either a list of URIs or a SPARQL query is required.'));
+      form_set_error('feeds][LinkedDataImportSparqlFetcher][list_query', '');
     }
 
     // Validate the list of URIs.
@@ -154,28 +154,28 @@ class RdfImporterSparqlFetcher extends FeedsFetcher {
       if (!empty($items)) {
         foreach ($items as $v) {
           $v = trim($v);
-          if (!empty($v) && !rdfimporter_validate_uri($v)) {
-            form_set_error('feeds][RdfImporterSparqlFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
+          if (!empty($v) && !ld_import_validate_uri($v)) {
+            form_set_error('feeds][LinkedDataImportSparqlFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
           }
         }
       }
       else {
-        form_set_error('feeds][RdfImporterSparqlFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
+        form_set_error('feeds][LinkedDataImportSparqlFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
       }
     }
 
     // Validate the SPARQL query.
     if (isset($values['list_query']) && !empty($values['list_query'])) {
       $errors = array();
-      if (! rdfimporter_validate_sparql($values['list_query'], $errors) ) {
-        form_set_error('feeds][RdfImporterSparqlFetcher][list_query', t('There is a problem with the SPARQL query.') . theme_item_list($errors));
+      if (! ld_import_validate_sparql($values['list_query'], $errors) ) {
+        form_set_error('feeds][LinkedDataImportSparqlFetcher][list_query', t('There is a problem with the SPARQL query.') . theme_item_list($errors));
       }
     }
     // Validate the SPARQL query.
     if (isset($values['data_query']) && !empty($values['data_query'])) {
       $errors = array();
-      if (!rdfimporter_validate_sparql($values['data_query'], $errors)) {
-        form_set_error('feeds][RdfImporterSparqlFetcher][data_query', t('There is a problem with the data query.') . theme_item_list($errors));
+      if (!ld_import_validate_sparql($values['data_query'], $errors)) {
+        form_set_error('feeds][LinkedDataImportSparqlFetcher][data_query', t('There is a problem with the data query.') . theme_item_list($errors));
       }
     }
   }

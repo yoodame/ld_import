@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Home of the RdfImporterParserResult.
+ * Home of the LinkedDataImportParserResult.
  *
  * Throughout the processing stage, a single ARC_Resource object
  * gets passed around. This object handles all HTTP requests for
@@ -13,10 +13,10 @@
  */
 
 /**
- * Class definition for RdfParserResult.
+ * Class definition for LinkedDataImportParserResult.
  */
 
-class RdfImporterParserResult extends FeedsParserResult {
+class LinkedDataImportParserResult extends FeedsParserResult {
   public $arc;
   public $samples;
   public $sample_limit;
@@ -33,7 +33,7 @@ class RdfImporterParserResult extends FeedsParserResult {
     $this->uri_list = $uri_list;
     $this->arc = $arc;
     $this->samples = array();
-    $this->sample_limit = RDFIMPORTER_MAX_SAMPLES;
+    $this->sample_limit = LD_IMPORT_MAX_SAMPLES;
     $this->fetch_labels = FALSE;
 
     // Get the current site language to limit content
@@ -58,7 +58,7 @@ class RdfImporterParserResult extends FeedsParserResult {
 
     // Move through the URI list until we hit a URI that returns data.
     while ($uri = array_shift($this->items)) {
-      $individual = new RdfImporterIndividual($uri, $this->arc, $this->language);
+      $individual = new LinkedDataImportIndividual($uri, $this->arc, $this->language);
       $individual->arc->resetErrors();
       if ($individual->hasProperties()) {
         $this->current_item = $individual;
@@ -78,11 +78,11 @@ class RdfImporterParserResult extends FeedsParserResult {
    */
   public function logErrors($uri, $errors = array()) {
     if (!empty($errors)) {
-      $message = t('RDFimporter: The remote resource @uri was not imported. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
+      $message = t('Linked Data Import: The remote resource @uri was not imported. The following errors were returned: %errors', array('@uri' => $uri, '%errors' => implode('. ', $errors)));
       drupal_set_message($message, 'status');
     }
     else {
-      $message = t('RDFimporter: The remote resource @uri was not imported. No data was returned.', array('@uri' => $uri));
+      $message = t('Linked Data Import: The remote resource @uri was not imported. No data was returned.', array('@uri' => $uri));
       drupal_set_message($message, 'status');
     }
   }
@@ -91,9 +91,9 @@ class RdfImporterParserResult extends FeedsParserResult {
    * Attempt to create a temp file on the filesystem for caching between batch operations.
    */
   public function createTempFile() {
-    $this->temp_file =   'temporary:///rdfimporter_batch_' . md5(serialize($this->uri_list)) . '.tmp';
+    $this->temp_file =   'temporary:///ld_import_batch_' . md5(serialize($this->uri_list)) . '.tmp';
     if (!file_unmanaged_save_data(serialize($this->arc), $this->temp_file, FILE_EXISTS_REPLACE)) {
-      drupal_set_message(t('RDFimporter: Could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'), 'warning', FALSE);
+      drupal_set_message(t('Linked Data Import: Could not write temporary files to the Drupal temp directory. Make sure the temp directory set at /admin/settings/file-system is writable.'), 'warning', FALSE);
     }
   }
 
@@ -140,7 +140,7 @@ class RdfImporterParserResult extends FeedsParserResult {
    */
   function __wakeup() {
     // Make sure the ARC base is included.
-    rdfimporter_include_arc();
+    ld_import_include_arc();
     // Trigger additional file includes using ARC's helper functions.
     ARC2::getResource();
     ARC2::getRemoteStore();

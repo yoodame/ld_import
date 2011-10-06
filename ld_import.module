@@ -3,15 +3,15 @@
 
 /**
  * @file
- * RDFimporter module - Feeds plugins with added 'preview' functionality.
+ * Linked Data Import module - Feeds plugins with added 'preview' functionality.
  */
 
 /**
  * Implementation of hook_init().
  */
-function rdfimporter_init() {
-  module_load_include('inc', 'rdfimporter', 'rdfimporter.classes');
-  rdfimporter_include_arc();
+function ld_import_init() {
+  module_load_include('inc', 'ld_import', 'ld_import.classes');
+  ld_import_include_arc();
 }
 
 /**
@@ -20,8 +20,8 @@ function rdfimporter_init() {
  * Clean up any temp files lingering from imports
  * that ended prematurely.
  */
-function rdfimporter_cron() {
-  foreach (file_scan_directory(file_directory_temp(), '^rdfimporter_batch') as $file) {
+function ld_import_cron() {
+  foreach (file_scan_directory(file_directory_temp(), '^ld_import_batch') as $file) {
     file_delete($file->filename);
   }
 }
@@ -29,12 +29,12 @@ function rdfimporter_cron() {
 /**
  * Implementation of hook_theme().
  */
-function rdfimporter_theme() {
+function ld_import_theme() {
   return array(
-    'rdfimporter_samples' => array(
+    'ld_import_samples' => array(
       'arguments' => array('samples' => array()),
     ),
-    'rdfimporter_sample' => array(
+    'ld_import_sample' => array(
       'arguments' => array('sample' => array()),
     ),
   );
@@ -43,50 +43,50 @@ function rdfimporter_theme() {
 /**
 * Implementation of hook_feeds_plugins().
 */
-function rdfimporter_feeds_plugins() {
-  $path = drupal_get_path('module', 'rdfimporter') . '/plugins';
+function ld_import_feeds_plugins() {
+  $path = drupal_get_path('module', 'ld_import') . '/plugins';
   $info = array();
-  $info['RdfImporterSparqlFetcher'] = array(
-    'name' => 'RDFimporter SPARQL Fetcher',
-    'description' => 'Fetches RDF from a SPARQL endpoint',
+  $info['LinkedDataImportSparqlFetcher'] = array(
+    'name' => 'Linked Data Import SPARQL Fetcher',
+    'description' => 'Fetches Linked Data from a SPARQL endpoint',
     'hidden' => FALSE,
     'handler' => array(
       'parent' => 'FeedsFetcher',
-      'class' => 'RdfImporterSparqlFetcher',
-      'file' => 'RdfImporterSparqlFetcher.inc',
+      'class' => 'LinkedDataImportSparqlFetcher',
+      'file' => 'LinkedDataImportSparqlFetcher.inc',
       'path' => $path,
     ),
   );
-  $info['RdfImporterLinkedDataFetcher'] = array(
-    'name' => 'RDFimporter Linked Data Fetcher',
-    'description' => 'Fetches RDF via HTTP content negotiation',
+  $info['LinkedDataImportSimpleFetcher'] = array(
+    'name' => 'Linked Data Import Simple Fetcher',
+    'description' => 'Fetches Linked Data via HTTP content negotiation',
     'hidden' => FALSE,
     'handler' => array(
       'parent' => 'FeedsFetcher',
-      'class' => 'RdfImporterLinkedDataFetcher',
-      'file' => 'RdfImporterLinkedDataFetcher.inc',
+      'class' => 'LinkedDataImportSimpleFetcher',
+      'file' => 'LinkedDataImportSimpleFetcher.inc',
       'path' => $path,
     ),
   );
-  $info['RdfImporterParser'] = array(
-    'name' => 'RDFimporter Parser',
-    'description' => 'Prepares RDF content for processing',
+  $info['LinkedDataImportParser'] = array(
+    'name' => 'Linked Data Import Parser',
+    'description' => 'Prepares Linked Data for processing',
     'hidden' => FALSE,
     'handler' => array(
       'parent' => 'FeedsParser',
-      'class' => 'RdfImporterParser',
-      'file' => 'RdfImporterParser.inc',
+      'class' => 'LinkedDataImportParser',
+      'file' => 'LinkedDataImportParser.inc',
       'path' => $path,
     ),
   );
-  $info['RdfImporterNodeProcessor'] = array(
-    'name' => 'RDFimporter Node Processor',
-    'description' => 'Creates and updates nodes from RDF',
+  $info['LinkedDataImportNodeProcessor'] = array(
+    'name' => 'Linked Data Import Node Processor',
+    'description' => 'Creates and updates nodes from Linked Data',
     'hidden' => FALSE,
     'handler' => array(
       'parent' => 'FeedsNodeProcessor',
-      'class' => 'RdfImporterNodeProcessor',
-      'file' => 'RdfImporterNodeProcessor.inc',
+      'class' => 'LinkedDataImportNodeProcessor',
+      'file' => 'LinkedDataImportNodeProcessor.inc',
       'path' => $path,
     ),
   );
@@ -101,14 +101,14 @@ function rdfimporter_feeds_plugins() {
  * must be added here with an alter because the source form itself has no
  * awareness of the active importer or feed nid.
  */
-function rdfimporter_form_alter(&$form, $form_state, $form_id) {
+function ld_import_form_alter(&$form, $form_state, $form_id) {
   if ($form['#id'] == 'node-form' || $form['#id'] == 'feeds-import-form') {
 
-    $form['feeds']['#title'] = t('RDF import');
+    $form['feeds']['#title'] = t('Linked Data import');
 
     // Only continue if there is a Feeds source form present
     // and our parser is being used.
-    if (isset($form['feeds']['RdfImporterParser'])) {
+    if (isset($form['feeds']['LinkedDataImportParser'])) {
 
       $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form['#feed_id'];
       $feed_nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : 0;
@@ -116,23 +116,23 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
       // If the node form has not been saved yet remove
       // some of the preview elements and change the text.
       if ($form['#id'] == 'node-form' && !$feed_nid) {
-        $form['feeds']['RdfImporterParser']['preview']['status_message']['#value'] = t('Run a preview to see sample data for this import. The preview is also used to show available properties on the mappings page.');
-        // $form['feeds']['RdfImporterParser']['preview']['refresh']['#value'] = t('Save and Preview');
+        $form['feeds']['LinkedDataImportParser']['preview']['status_message']['#value'] = t('Run a preview to see sample data for this import. The preview is also used to show available properties on the mappings page.');
+        // $form['feeds']['LinkedDataImportParser']['preview']['refresh']['#value'] = t('Save and Preview');
       }
 
       // Store values required by the preview submit handler.
-      $form['rdfimporter_feed_nid'] = array(
+      $form['ld_import_feed_nid'] = array(
         '#type' => 'value',
         '#value' => $feed_nid,
       );
-      $form['rdfimporter_importer'] = array(
+      $form['ld_import_importer'] = array(
         '#type' => 'value',
         '#value' => $importer_id,
       );
 
       // If there is sample data, also add an "Edit mappings" link.
-      if (isset($form['feeds']['RdfImporterParser']['preview']['samples_table'])) {
-        $form['feeds']['RdfImporterParser']['mappings_link'] = array(
+      if (isset($form['feeds']['LinkedDataImportParser']['preview']['samples_table'])) {
+        $form['feeds']['LinkedDataImportParser']['mappings_link'] = array(
           '#prefix' => '<p>',
           '#markup' => l('Edit mappings', 'admin/structure/feeds/edit/' . $importer_id . '/mapping'),
           '#suffix' => '</p>',
@@ -143,13 +143,13 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
   }
 
   // Add a preview table to the mappings form.
-  if ($form_id == 'feeds_ui_mapping_form' && (get_class($form['#importer']->parser) == 'RdfImporterParser')) {
-    drupal_add_css(drupal_get_path('module', 'rdfimporter') . '/rdfimporter.css');
+  if ($form_id == 'feeds_ui_mapping_form' && (get_class($form['#importer']->parser) == 'LinkedDataImportParser')) {
+    drupal_add_css(drupal_get_path('module', 'ld_import') . '/ld_import.css');
     if ($samples = $form['#importer']->parser->loadSamples()) {
       $fieldset = array(
         '#type' => 'fieldset',
         '#title' => t('Preview'),
-        '#value' => theme('rdfimporter_samples', $samples),
+        '#value' => theme('ld_import_samples', $samples),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       );
@@ -168,9 +168,9 @@ function rdfimporter_form_alter(&$form, $form_state, $form_id) {
  *  2. Feeds' standalone import form
  * Form arrays will be different depending on where the preview originates.
  */
-function rdfimporter_refresh_preview_submit($form, $form_state) {
-  $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form_state['values']['rdfimporter_importer'];
-  $feed_nid = (isset($form_state['values']['rdfimporter_feed_nid'])) ? $form_state['values']['rdfimporter_feed_nid'] : 0;
+function ld_import_refresh_preview_submit($form, $form_state) {
+  $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form_state['values']['ld_import_importer'];
+  $feed_nid = (isset($form_state['values']['ld_import_feed_nid'])) ? $form_state['values']['ld_import_feed_nid'] : 0;
 
   // For a node form save the node. For a Feeds import form save the source.
   if ($form['#id'] == 'node-form') {
@@ -188,13 +188,13 @@ function rdfimporter_refresh_preview_submit($form, $form_state) {
 
   $batch = array(
     'operations' => array(
-      array('rdfimporter_refresh_preview_process', array($importer_id, $feed_nid)),
+      array('ld_import_refresh_preview_process', array($importer_id, $feed_nid)),
       ),
     'title' => t('Refreshing preview'),
     'init_message' => t('Initializing...'),
     'progress_message' => t('Fetching data...'),
     'error_message' => t('Could not finish fetching data.'),
-    'finished' => 'rdfimporter_refresh_preview_finished'
+    'finished' => 'ld_import_refresh_preview_finished'
   );
   batch_set($batch);
 }
@@ -206,7 +206,7 @@ function rdfimporter_refresh_preview_submit($form, $form_state) {
  * between passes. Works similarly to a real Feeds import
  * except instead of process() we're calling gatherSamples().
  */
-function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $context) {
+function ld_import_refresh_preview_process($importer_id = '', $feed_nid = 0, $context) {
   $context['finished'] = 1;
 
   // Stashing the nid in here so we can do a drupal_goto()
@@ -227,7 +227,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $
       // If we don't have a list of URIs to fetch, no reason to continue.
       if (! count($parser_result->items)) {
 
-        drupal_set_message(t('RDFimporter: Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
+        drupal_set_message(t('Linked Data Import: Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
         $context['finished'] = 1;
         return;
       }
@@ -268,7 +268,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $
     if (!$remaining || !$saved) {
       // Only save new preview if there is actually data.
       if (!empty($parser_result->samples)) {
-        drupal_set_message(t('RDFimporter: The preview completed successfully.'), 'status', FALSE);
+        drupal_set_message(t('Linked Data Import: The preview completed successfully.'), 'status', FALSE);
         $source->importer->parser->saveSamples($parser_result, $source);
       }
       file_unmanaged_delete($parser_result->temp_file);
@@ -280,7 +280,7 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $
     $context['finished'] = ($context['sandbox']['total'] - $remaining) / $context['sandbox']['total'];
   }
   catch (Exception $e) {
-    drupal_set_message('RDFimporter: ' . $e->getMessage(), 'error');
+    drupal_set_message('Linked Data Import: ' . $e->getMessage(), 'error');
   }
 }
 
@@ -290,9 +290,9 @@ function rdfimporter_refresh_preview_process($importer_id = '', $feed_nid = 0, $
  * If working with a feed node, redirect to node edit form
  * after the preview import is completed.
  */
-function rdfimporter_refresh_preview_finished($success, $results, $operations) {
+function ld_import_refresh_preview_finished($success, $results, $operations) {
   if ($success && !empty($results['feed_nid'])) {
-    drupal_goto('node/' . $results['feed_nid'] . '/edit', '', 'rdfimporter-preview');
+    drupal_goto('node/' . $results['feed_nid'] . '/edit', '', 'ld_import-preview');
   }
 }
 
@@ -302,9 +302,9 @@ function rdfimporter_refresh_preview_finished($success, $results, $operations) {
  * Look in the following locations:
  * 1. <libraries directory>/arc
  * 2. <RDF module>/vendor/arc
- * 3. <RDFimporter module>/arc
+ * 3. <ld_import module>/arc
  */
-function rdfimporter_include_arc() {
+function ld_import_include_arc() {
   if (!class_exists('ARC2')) {
     if (module_exists('libraries') && file_exists(libraries_get_path('arc') ."/ARC2.php")) {
       @include_once libraries_get_path('arc') .'/ARC2.php';
@@ -312,19 +312,19 @@ function rdfimporter_include_arc() {
     elseif (defined('RDF_ARC2_PATH') && file_exists('./' . RDF_ARC2_PATH . '/ARC2.php')) {
       @include_once './' . RDF_ARC2_PATH . '/ARC2.php';
     }
-    elseif (file_exists(drupal_get_path('module', 'rdfimporter') . '/arc/ARC2.php')) {
-      @include_once drupal_get_path('module', 'rdfimporter') . '/arc/ARC2.php';
+    elseif (file_exists(drupal_get_path('module', 'ld_import') . '/arc/ARC2.php')) {
+      @include_once drupal_get_path('module', 'ld_import') . '/arc/ARC2.php';
     }
   }
   if (!class_exists('ARC2')) {
-    drupal_set_message(t('RDFimporter: The ARC2 library could not be loaded. ARC2 is required for this module to work. Check the INSTALL file inside the rdfimporter module folder to find out how ARC can be installed.'), 'warning', FALSE);
+    drupal_set_message(t('Linked Data Import: The ARC2 library could not be loaded. ARC2 is required for this module to work. Check the INSTALL file inside the ld_import module folder to find out how ARC can be installed.'), 'warning', FALSE);
   }
 }
 
 /**
  * Validate a SPARQL query string.
  */
-function rdfimporter_validate_sparql($query, $errors = NULL) {
+function ld_import_validate_sparql($query, $errors = NULL) {
   $parser = ARC2::getSPARQLParser();
   $parser->parse($query);
 
@@ -338,23 +338,23 @@ function rdfimporter_validate_sparql($query, $errors = NULL) {
 /**
  * Validation functions from the RDF module.
  */
-function rdfimporter_validate_uri($uri) {
-  return rdfimporter_is_valid_url($uri) || rdfimporter_is_valid_urn($uri);
+function ld_import_validate_uri($uri) {
+  return ld_import_is_valid_url($uri) || ld_import_is_valid_urn($uri);
 }
 
-function rdfimporter_is_valid_url($url) {
+function ld_import_is_valid_url($url) {
   static $allowed_characters = '[a-z0-9\/:_\-_\.\?\$,;~=#&%\+]';
   return preg_match("/^([a-z]+):\/\/" . $allowed_characters . "+$/i", (string)$url);
 }
 
-function rdfimporter_is_valid_urn($urn) {
+function ld_import_is_valid_urn($urn) {
   return preg_match('/^urn:/', $urn) || preg_match('/^mailto:/', $urn); // FIXME
 }
 
 /**
  * Theme sample data for a feed as a table
  */
-function theme_rdfimporter_samples($samples) {
+function theme_ld_import_samples($samples) {
   $output = '';
   if (!empty($samples)) {
     $rows = array();
@@ -370,7 +370,7 @@ function theme_rdfimporter_samples($samples) {
 
       // Build a list of property values
       foreach ($property['values'] as $i => $item) {
-        $items[$i] = theme('rdfimporter_sample', $item);
+        $items[$i] = theme('ld_import_sample', $item);
       }
 
       $row[1] = theme('item_list', array("items" => $items));
@@ -378,12 +378,12 @@ function theme_rdfimporter_samples($samples) {
     }
 
     // Sort by property name
-    uasort($rows, 'rdfimporter_sort_table_rows');
+    uasort($rows, 'ld_import_sort_table_rows');
     $header = array(
-      '0' => array('data' => t('RDF Property'), 'class' => 'first'),
+      '0' => array('data' => t('Linked Data property'), 'class' => 'first'),
       '1' => array('data' => t('Sample'), 'class' => 'second'),
     );
-    $output = theme('table', array("header" => $header, "rows" => $rows, "attributes" => array('class' => array('rdfimporter-samples'))));
+    $output = theme('table', array("header" => $header, "rows" => $rows, "attributes" => array('class' => array('ld_import-samples'))));
   }
   return $output;
 }
@@ -391,7 +391,7 @@ function theme_rdfimporter_samples($samples) {
 /**
  * Theme a single sample
  */
-function theme_rdfimporter_sample($item) {
+function theme_ld_import_sample($item) {
   $sample = '';
 
   // Handle object properties differently
@@ -411,6 +411,6 @@ function theme_rdfimporter_sample($item) {
 /**
  * uasort() callback for sorting table rows by property name
  */
-function rdfimporter_sort_table_rows($a, $b) {
+function ld_import_sort_table_rows($a, $b) {
   return strcasecmp($a[0]['data'], $b[0]['data']);
 }
