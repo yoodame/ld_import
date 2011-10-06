@@ -1,10 +1,10 @@
-RDFimporter module
+Linked Data Import module
 ==================
-RDFimporter is primarily a set of plugins for the [Feeds module][feeds] that can be used to import remote RDF resources and map their content to Drupal nodes. It can be used for both one-time imports and periodic data imports.
+Linked Data Import is primarily a set of plugins for the [Feeds module][feeds] that can be used to import remote Linked Data resources and map their content to Drupal nodes. It can be used for both one-time imports and periodic data imports.
 
-Most of the Drupal functionality comes from the Feeds module itself. All RDF fetching and parsing is handled by the [ARC2 RDF framework][arc2]. (Both great pieces of software)
+Most of the Drupal functionality comes from the Feeds module itself. All fetching and parsing is handled by the [ARC2 RDF framework][arc2]. (Both great pieces of software)
 
-This module is the result of work being done at Cornell University's [Mann Library][mann] to bring content from Cornell's [VIVO database][vivo] into Drupal. Our hope is that other groups and institutions will be able use this module to bring VIVO content into their Drupal sites. We also hope this code will be useful to others as RDF becomes more available on the Web.
+This module is the result of work being done at Cornell University's [Mann Library][mann] to bring content from Cornell's [VIVO database][vivo] into Drupal. Our hope is that other groups and institutions will be able use this module to bring VIVO content into their Drupal sites. We also hope this code will be useful to others as Linked Data becomes more available on the Web.
 
 [feeds]: http://drupal.org/project/feeds
 [arc2]: http://arc.semsol.org/
@@ -14,18 +14,18 @@ This module is the result of work being done at Cornell University's [Mann Libra
 
 Goals
 =====
-- Make it easy for site builders, including non-developers, to import remote RDF content
-- Allow RDF to be mapped to standard Drupal structures (CCK, Taxonomy)
+- Make it easy for site builders, including non-developers, to import remote Linked Data content
+- Allow Linked Data to be mapped to standard Drupal structures (CCK, Taxonomy)
 - Provide a way to update nodes manually or automatically
 
 
 Features
 ========
 - Support for Linked Data and SPARQL endpoints (via ARC2)
-- Allows users to define mappings between RDF properties and Drupal node properties
-- Requires very little knowledge about RDF and SPARQL
+- Allows users to define mappings between Linked Data properties and Drupal node properties
+- Requires little knowledge about Linked Data, RDF, and SPARQL
 - Automatically fetches human-readable labels for object properties
-- Automatically filters out content in languages different from the site (when language is explicitly set in RDF)
+- Automatically filters out content in languages different from the site (when language is explicitly set in Linked Data)
 - Provides hooks to 'preprocess' retrieved data and hooks to expose additional node properties
 
 
@@ -76,7 +76,7 @@ Some future plans
 
 Other modules
 =============
-There are some great modules available that provide similar functionality, including [SPARQL Views][sparql_views] and [Linked Data][linked_data]. One major difference is that RDFimporter can work without a SPARQL endpoint if RDF is available via Linked Data. However, compared to those modules, RDFimporter does things quite lazily. It requires far less familiarity with RDF or SPARQL, but this ultimately makes it inefficient in some cases. If the data you're after is available from a SPARQL endpoint and you can write SPARQL queries, you might be better off with something like [SPARQL Views + Feeds View Parser][sparql_views_screencasts].
+There are some great modules available that provide similar functionality, including [SPARQL Views][sparql_views] and [Linked Data][linked_data]. One major difference is that Linked Data Import can work without a SPARQL endpoint if Linked Data is available via content negotiation. However, compared to those modules, Linked Data Import does things quite lazily. It requires far less familiarity with Linked Dat or SPARQL, but this ultimately makes it inefficient in some cases. If the data you're after is available from a SPARQL endpoint and you can write SPARQL queries, you might be better off with something like [SPARQL Views + Feeds View Parser][sparql_views_screencasts].
 
 [sparql_views]: http://drupal.org/project/sparql_views
 [linked_data]: http://drupal.org/project/linked_data

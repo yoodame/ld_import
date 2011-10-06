@@ -5,11 +5,11 @@ Requirements
 - **[Feeds module][feeds]** - tested with version 7.x-2.0-alpha4
   - **[Chaos tool suite (CTools) module][ctools]** - Feeds dependency
   - **[Job Scheduler module][jobscheduler]** - Feeds dependency
-  - **Feeds UI module** (included with Feeds) - needed for configuring imports, but not required for RDFimporter to function
+  - **Feeds UI module** (included with Feeds) - needed for configuring imports, but not required for Linked Data Import to function
 - **[Libraries module][libraries]** (optional, but recommended) - good way to share ARC2 and other PHP libraries among modules
 - **[ARC2 library][arc2]** - open source PHP library for working with RDF
 
-*NOTE: There are issues with some SPARQL endpoints and the way they handle SPARQL DESCRIBE queries, resulting in ARC not getting the data it needs. This has been fixed on ARC's GitHub repository, but is not part of the main release yet. If using RDFimporter with a SPARQL endpoint (especially Sesame), you may want to download the ARC2 library from the [GitHub repository][arc_github] instead.*
+*NOTE: There are issues with some SPARQL endpoints and the way they handle SPARQL DESCRIBE queries, resulting in ARC not getting the data it needs. This has been fixed on ARC's GitHub repository, but is not part of the main release yet. If using Linked Data Import with a SPARQL endpoint (especially Sesame), you may want to download the ARC2 library from the [GitHub repository][arc_github] instead.*
 
 [feeds]: http://drupal.org/project/feeds
 [ctools]: http://drupal.org/project/ctools
@@ -27,18 +27,18 @@ Installation
 
    There are a few different ways to do this...
    
-   - If you use the RDF module, or other modules that utilize ARC, it should be available to RDFimporter already.
+   - If you use the RDFx module, or other modules that utilize ARC, it should be available to Linked Data Import already.
    - (Using Libraries module) Unpack (or git clone) the ARC2 bundle into either "sites/all/libraries/arc" or "sites/<sitename>/libraries/arc"
    - Unpack or clone the ARC2 bundle directly into "modules/ld_import/arc"
 
-   Drupal will show a notice if RDFimporter has trouble finding ARC.
+   Drupal will show a notice if Linked Data Import has trouble finding ARC.
 
-3. Download and enable the RDFimporter module.
+3. Download and enable the Linked Data Import module.
   
 
 System settings
 ---------------
-RDFimporter makes a lot of HTTP requests and retrieves a lot of data. While it does use Drupal's Batch API to help move things along smoothly, there are still common issues.
+Linked Data Import makes a lot of HTTP requests and retrieves a lot of data. While it does use Drupal's Batch API to help move things along smoothly, there are still common issues.
 
 - **PHP maximum execution time:**
   The default seems to be around 30 seconds, which is sometimes too low for even Drupal itself. This is set with "max_execution_time" in "php.ini". A good figure for development might be 180 seconds.
@@ -47,7 +47,7 @@ RDFimporter makes a lot of HTTP requests and retrieves a lot of data. While it d
   Unless you're importing a whole lot of data this may never be an issue, but it's something to be aware of. It is set with "memory_limit" in "php.ini"
 
 - **MySQL packet size limit:**
-  The Drupal Batch API temporarily saves data to the database between each batch that it processes. In the case of RDFimporter, this means saving a big chunk of data that it fetched. The default limit for some installations is 1MB, which is a definite problem. This is set with "max_allowed_packet" in "my.cnf". The [Drupal requirements page][requirements] recommends at least 16MB.
+  The Drupal Batch API temporarily saves data to the database between each batch that it processes. In the case of Linked Data Import, this means saving a big chunk of data that it fetched. The default limit for some installations is 1MB, which is a definite problem. This is set with "max_allowed_packet" in "my.cnf". The [Drupal requirements page][requirements] recommends at least 16MB.
 
 [requirements]: http://drupal.org/requirements
 
@@ -62,11 +62,11 @@ Setting up imports involves creating *Feeds importers* using the Feeds UI (separ
 
 First, you need:
 
-- (If importing Linked Data) A list of Linked Data URIs
+- (If importing Linked Data via content negotiation) A list of Linked Data URIs
 - (If using a SPARQL endpoint) A list of URIs from an SPARQL endpoint **OR** a SPARQL SELECT query that returns a list of URIs from the endpoint
 - A content type configured with fields to store data
 
-To create your first RDF importer...
+To create your first Linked Data importer...
 
 1. Go to "/admin/build/feeds" and click "New importer".
 
@@ -83,15 +83,15 @@ To create your first RDF importer...
       
    2. **Fetcher**
    
-      Change to either "RDFimporter Linked Data Fetcher" or "RDFimporter SPARQL Fetcher" depending on your data source.
+      Change to either "Linked Data Import Simple Fetcher" or "Linked Data Import SPARQL Fetcher" depending on your data source.
    
    3. **Parser**
    
-      Change to "RDFimporter Parser"
+      Change to "Linked Data Import Parser"
    
    4. **Processor**
       
-      Change to "RDFimporter Node Processor"
+      Change to "Linked Data Import Node Processor"
    
    From this point you can ignore the first 3 sections because all the settings you'll be changing are in the "Processor" section.
    
