@@ -23,7 +23,7 @@ require_once(dirname(__FILE__) .'/LinkedDataImportParserResult.inc');
 class LinkedDataImportParser extends FeedsParser {
 
   /**
-   * Implementation of FeedsParser::parse().
+   * Implements FeedsParser::parse().
    */
   public function parse(FeedsSource $source, FeedsFetcherResult $fetcher_result) {
     $items = $fetcher_result->getRaw();
@@ -31,7 +31,7 @@ class LinkedDataImportParser extends FeedsParser {
   }
 
   /**
-   * Implementation of FeedsParser::getMappingSources().
+   * Implements FeedsParser::getMappingSources().
    *
    * @todo Need to give some guidance if there are no samples/sources available.
    */
@@ -86,7 +86,7 @@ class LinkedDataImportParser extends FeedsParser {
   }
 
   /**
-   * Implementation of FeedsParser::getSourceElement().
+   * Implements FeedsParser::getSourceElement().
    */
   public function getSourceElement(FeedsSource $source, FeedsParserResult $result, $element_key) {
     $individual = $result->currentItem();

@@ -13,7 +13,7 @@
  */
 
 /**
- * Class definition for LinkedDataImportResult.
+ * Class definition for LinkedDataImportFetcherResult.
  */
 class LinkedDataImportFetcherResult extends FeedsFetcherResult {
   public $uri_list;
@@ -35,7 +35,7 @@ class LinkedDataImportFetcherResult extends FeedsFetcherResult {
   }
 
   /**
-   * Implementation of FeedsFetcherResult::getRaw();
+   * Implements FeedsFetcherResult::getRaw();
    *
    * @todo Once batching is supported at the fetching/parsing level
    *  it would be nice to attempt fetching data here. But for now

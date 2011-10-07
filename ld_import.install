@@ -23,6 +23,6 @@ function ld_import_enable() {
  * than Feeds should take care of this.
  */
 function ld_import_install() {
-  $feeds_weight = (int) db_query("SELECT weight FROM {system} WHERE name = 'feeds' AND type = 'module'")->fetchField;
-  db_query("UPDATE {system} SET weight = :weight WHERE name = 'ld_import' AND type = 'module'", array(':weight' => $weight + 10))->fetchField;
+  $feeds_weight = (int) db_query("SELECT weight FROM {system} WHERE name = 'feeds' AND type = 'module'")->fetchField();
+  db_query("UPDATE {system} SET weight = :weight WHERE name = 'ld_import' AND type = 'module'", array(':weight' => $feeds_weight + 10));
 }
