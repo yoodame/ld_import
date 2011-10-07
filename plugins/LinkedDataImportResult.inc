@@ -173,9 +173,6 @@ class LinkedDataImportResult extends FeedsFetcherResult {
 
 }
 
-
-
-
 /**
  * Class definition for LinkedDataImportResult.
  */
@@ -334,5 +331,4 @@ class LinkedDataImportResult extends FeedsFetcherResult {
     // MUST return something here.
     return array_keys(get_object_vars($this));
   }
-
 }

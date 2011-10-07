@@ -309,8 +309,8 @@ function ld_import_include_arc() {
     if (module_exists('libraries') && file_exists(libraries_get_path('arc') ."/ARC2.php")) {
       @include_once libraries_get_path('arc') .'/ARC2.php';
     }
-    elseif (defined('RDF_ARC2_PATH') && file_exists('./' . RDF_ARC2_PATH . '/ARC2.php')) {
-      @include_once './' . RDF_ARC2_PATH . '/ARC2.php';
+    elseif (defined('RDF_ARC2_PATH') && file_exists(RDF_ARC2_PATH . '/ARC2.php')) {
+      @include_once RDF_ARC2_PATH . '/ARC2.php';
     }
     elseif (file_exists(drupal_get_path('module', 'ld_import') . '/arc/ARC2.php')) {
       @include_once drupal_get_path('module', 'ld_import') . '/arc/ARC2.php';
