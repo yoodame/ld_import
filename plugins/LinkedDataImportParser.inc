@@ -40,7 +40,8 @@ class LinkedDataImportParser extends FeedsParser {
     $samples = $this->loadSamples();
 
     foreach ($samples as $uri => $property) {
-      // When sample arrays get merged, the label can become an array instead of a string.
+      // When sample arrays get merged, the label can become an array 
+      // instead of a string.
       $name = is_array($property['label']) ? $property['label'][0] : $property['label'];
 
       if ($item = reset($property['values'])) {
@@ -67,7 +68,6 @@ class LinkedDataImportParser extends FeedsParser {
     $sources['label'] = array('name' => t('Resource label'), 'description' => t('Single label for a resource'));
     $sources['uri'] = array('name' => t('Resource URI'), 'description' => t('URI for a resource'));
 
-    #drupal_alter('ld_import_parser_sources', $sources, 'node', $this->config['content_type']););
     feeds_alter('ld_import_parser_sources', $sources, feeds_importer($this->id)->config['content_type']);
 
     return array_reverse($sources);
@@ -105,12 +105,14 @@ class LinkedDataImportParser extends FeedsParser {
       sort($items);
     }
 
-    // If there is only a single value, return only the value instead of an array.
+    // If there is only a single value, return only the value 
+    // instead of an array.
     return (count($items) > 1) ? $items : array_shift($items);
   }
 
   /**
-   * Based on the mapping source string, extract property values from the individual.
+   * Based on the mapping source string, extract property values
+   * from the individual.
    */
   public function extractPropertyValues(LinkedDataImportIndividual $individual, $source, &$items) {
     foreach (element_children($source) as $property_uri) {
@@ -130,7 +132,8 @@ class LinkedDataImportParser extends FeedsParser {
   }
 
   /**
-   * Gather sample data for all an individual's properties and save it in the batch.
+   * Gather sample data for all an individual's properties
+   * and save it in the batch.
    */
   public function gatherSamples(LinkedDataImportParserResult $parser_result) {
 
@@ -146,12 +149,14 @@ class LinkedDataImportParser extends FeedsParser {
 
     foreach ($individual->getSamples() as $uri => $item) {
 
-      // Only add samples for this property if it hasn't been saved yet or we still need more values.
+      // Only add samples for this property if it hasn't been saved yet
+      // or we still need more values.
       if (!isset($samples[$uri]) || (count($samples[$uri]['values']) < $max_samples)) {
 
         if (!isset($samples[$uri])) {
           $parser_result->arc->setURI($uri);
-          // If enabled, try to get a label for each property URI, otherwise make one.
+          // If enabled, try to get a label for each property URI,
+          // otherwise make one.
           if ($parser_result->fetch_labels) {
             $label = $parser_result->arc->getPropValue(RDFS_LABEL_URI);
             $label = ($label) ? $label : $parser_result->arc->extractTermLabel($uri);
@@ -205,7 +210,8 @@ class LinkedDataImportParser extends FeedsParser {
   }
 
   /**
-   * Save sample data to the current $source config so it gets saved to the database.
+   * Save sample data to the current $source config so it gets
+   * saved to the database.
    */
   public function saveSamples(LinkedDataImportParserResult $parser_result, FeedsSource $source) {
     $config = $source->getConfig();

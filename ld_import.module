@@ -231,7 +231,8 @@ function ld_import_refresh_preview_process($importer_id = '', $feed_nid = 0, $co
         return;
       }
 
-      // If the number of items exceeds the specified limit, trim the items array.
+      // If the number of items exceeds the specified limit,
+      // trim the items array.
       $config = $source->getConfigFor($source->importer->parser);
       $max = $config['fetch_limit'];
       if ($max < count($parser_result->items) && $max > 0) {

@@ -88,7 +88,8 @@ class LinkedDataImportParserResult extends FeedsParserResult {
   }
 
   /**
-   * Attempt to create a temp file on the filesystem for caching between batch operations.
+   * Attempt to create a temp file on the filesystem for caching 
+   * between batch operations.
    */
   public function createTempFile() {
     $this->temp_file =   'temporary:///ld_import_batch_' . md5(serialize($this->uri_list)) . '.tmp';
@@ -124,7 +125,8 @@ class LinkedDataImportParserResult extends FeedsParserResult {
   }
 
   /**
-   * Empty out the current item before serializing so ARC data is not saved to the database.
+   * Empty out the current item before serializing so ARC data 
+   * is not saved to the database.
    */
   public function clearItem() {
     $this->current_item = NULL;

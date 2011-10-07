@@ -89,7 +89,8 @@ class LinkedDataImportResource {
       case ($count == 1):
         return $item['value'];
       case ($count > 1):
-        // Try to find a value in the target language, otherwise just return the first value.
+        // Try to find a value in the target language, otherwise just 
+        // return the first value.
         $filtered = $this->filterLanguage($items);
         $item = ($filtered) ? reset($filtered) : $item;
         return $item['value'];
@@ -123,7 +124,8 @@ class LinkedDataImportResource {
    * @param $items
    *   An array of ARC2 property values
    * @return
-   *   An array of property values either in the target language or with no language specified
+   *   An array of property values either in the target language or with 
+   *   no language specified
    */
   protected function filterLanguage($items) {
     foreach ($items as $uri => $item) {
@@ -183,7 +185,8 @@ class LinkedDataImportIndividual extends LinkedDataImportResource {
     $this->arc->setURI($this->uri);
     $props = $this->arc->getProps();
     foreach ($props as $uri => $values) {
-      // Try to find a property value in the target language, otherwise just use the first one
+      // Try to find a property value in the target language, otherwise 
+      // just use the first one
       $item = ($filtered = $this->filterLanguage($values)) ? $filtered[array_rand($filtered)] : $values[array_rand($values)];
       $samples[$uri] = new LinkedDataImportPropertyValue($item, $this->arc, $this->language);
     }
@@ -245,10 +248,10 @@ class LinkedDataImportPropertyValue extends LinkedDataImportResource {
     parent::__construct(NULL, $arc, $site_language);
     $this->item = $item;
 
-    // If this is an object property, set the active URI. Otherwise make sure it's NULL.
-    // If the URI is NULL, arc will return empty arrays for methods that attempt
-    // to fetch properties. This would return empty arrays when attempting to get
-    // a label for a data property
+    // If this is an object property, set the active URI. Otherwise make sure 
+    // it's NULL. If the URI is NULL, arc will return empty arrays for methods 
+    // that attempt to fetch properties. This would return empty arrays when 
+    // attempting to get a label for a data property
     $this->uri = ($this->getType() == 'uri') ? $this->getValue() : NULL;
   }
 

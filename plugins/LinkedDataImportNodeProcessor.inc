@@ -40,7 +40,8 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
     if ($target_item) {
       $individual = $result->currentItem();
 
-      // Setting the rdfs:label as default title here, but it can be overridden with mappings.
+      // Setting the rdfs:label as default title here, but it can 
+      // be overridden with mappings.
       $target_item->title = $individual->getLabel();
       $target_item->feeds_item->url = $individual->getUri();
     }
@@ -49,7 +50,8 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
   }
 
   /**
-   * Override setTargetElement to only take first value from multi-valued fields.
+   * Override setTargetElement to only take first value
+   * from multi-valued fields.
    */
   public function setTargetElement(FeedsSource $source, $target_item, $target_element, $value) {
     // If we have a multi-value array, use the first value.
@@ -76,7 +78,8 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
   }
 
   /**
-   * Override parent::existingEntityId() since don't use unique targets, just the URI with url field.
+   * Override parent::existingEntityId() since don't use unique targets,
+   * just the URI with url field.
    */
   protected function existingEntityId(FeedsSource $source, FeedsParserResult $result) {
     $query = db_select('feeds_item')
