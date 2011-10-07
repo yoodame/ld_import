@@ -37,11 +37,14 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
    * Override parent::map() to add some defaults.
    */
   protected function map(FeedsSource $source, FeedsParserResult $result, $target_item = NULL) {
-    $individual = $result->currentItem();
+    if ($target_item) {
+      $individual = $result->currentItem();
 
-    // Setting the rdfs:label as default title here, but it can be overridden with mappings.
-    $target_item->title = $individual->getLabel();
-
+      // Setting the rdfs:label as default title here, but it can be overridden with mappings.
+      $target_item->title = $individual->getLabel();
+      $target_item->feeds_item->url = $individual->getUri();
+      dd('Target URI being set: ' . $individual->getUri());
+    }
     parent::loadMappers();
     return parent::map($source, $result, $target_item);
   }
@@ -58,7 +61,7 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
   }
 
   /**
-   * Return available mapping targets.
+   * Override mapping targets to add our own hook.
    */
   public function getMappingTargets() {
     $type = node_type_get_type($this->config['content_type']);
@@ -74,15 +77,20 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
   }
 
   /**
-   * Get nid of an existing feed item node if available.
+   * Override parent::existingEntityId() since don't use unique targets, just the URI with url field.
    */
-  /*
-  protected function existingItemId(FeedsImportBatch $batch, FeedsSource $source) {
-    $individual = $batch->currentItem();
-    $nid = db_result(db_query("SELECT nid FROM {feeds_node_item} WHERE feed_nid = %d AND id = '%s' AND url = '%s'", $source->feed_nid, $source->id, $individual->getUri()));
-    return ($nid) ? $nid : 0;
+  protected function existingEntityId(FeedsSource $source, FeedsParserResult $result) {
+    $query = db_select('feeds_item')
+      ->fields('feeds_item', array('entity_id'))
+      ->condition('feed_nid', $source->feed_nid)
+      ->condition('entity_type', $this->entityType())
+      ->condition('id', $source->id);
+      
+    $uri = $result->current_item->getUri();
+    $entity_id = $query->condition('url', $uri)->execute()->fetchField();
+
+    return ($entity_id) ? $entity_id : 0;
   }
-  */
 
   /**
    * Override parent::configDefaults().
