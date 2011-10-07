@@ -43,7 +43,6 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
       // Setting the rdfs:label as default title here, but it can be overridden with mappings.
       $target_item->title = $individual->getLabel();
       $target_item->feeds_item->url = $individual->getUri();
-      dd('Target URI being set: ' . $individual->getUri());
     }
     parent::loadMappers();
     return parent::map($source, $result, $target_item);
