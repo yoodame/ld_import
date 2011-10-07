@@ -5,5 +5,3 @@ package = Feeds
 dependencies[] = feeds
 core = 7.x
 php = 5.2
-
-

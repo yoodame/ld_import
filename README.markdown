@@ -81,4 +81,3 @@ There are some great modules available that provide similar functionality, inclu
 [sparql_views]: http://drupal.org/project/sparql_views
 [linked_data]: http://drupal.org/project/linked_data
 [sparql_views_screencasts]: http://lin-clark.com/blog/importing-syncing-content-external-sites-wikipedia
-

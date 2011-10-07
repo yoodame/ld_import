@@ -153,5 +153,4 @@ class LinkedDataImportParserResult extends FeedsParserResult {
     // MUST return something here.
     return array_keys(get_object_vars($this));
   }
-
-  }
+}

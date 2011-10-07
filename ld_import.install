@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_enable().
+ * Implements hook_enable().
  *
  * Clear the cache to display in Feeds plugin list.
  */
@@ -16,7 +16,7 @@ function ld_import_enable() {
 }
 
 /**
- * Implementation of hook_install().
+ * Implements hook_install().
  *
  * Linked Data Import needs to run AFTER the Feeds module for things
  * like hook_form_alter(). Setting the module weight higher
