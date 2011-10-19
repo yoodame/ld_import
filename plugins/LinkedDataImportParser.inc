@@ -66,6 +66,7 @@ class LinkedDataImportParser extends FeedsParser {
    */
   public function getSourceElement(FeedsSource $source, FeedsParserResult $result, $element_key) {
     $resource = $result->currentItem();
+    
     if ($element_key == 'URI') {
       return $resource->getUri();
     }
@@ -77,7 +78,7 @@ class LinkedDataImportParser extends FeedsParser {
       return $values;
     }
     else {
-      return '';
+      return array();
     }
   }
   
