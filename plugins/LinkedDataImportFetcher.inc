@@ -1,33 +1,30 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Home of the LinkedDataImportSimpleFetcher.
+ * Home of the LinkedDataImportFetcher.
  */
 
-// The LinkedDataImportFetcherResult class has been separated so it can
-// be used with multiple fetchers.
 require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
 
 /**
- * Class definition for LinkedDataImportSimpleFetcher.
+ * Class definition for LinkedDataImportFetcher.
  */
-class LinkedDataImportSimpleFetcher extends FeedsFetcher {
+class LinkedDataImportFetcher extends FeedsFetcher {
 
   /**
    * Implementation of FeedsFetcher::fetch().
    */
   public function fetch(FeedsSource $source) {
-    return new LinkedDataImportFetcherResult($this->getURIs($source), ARC2::getResource());
+    return new LinkedDataImportFetcherResult($this->getURIs($source));
   }
 
   /**
    * Get the list of URIs entered by the user.
    */
   public function getURIs($source) {
-    $source_config = $source->getConfigFor($this);
     $uri_list = array();
+    $source_config = $source->getConfigFor($this);
 
     // Gather entered URIs.
     if (!empty($source_config['list'])) {
@@ -43,6 +40,10 @@ class LinkedDataImportSimpleFetcher extends FeedsFetcher {
       }
     }
     return array_values($uri_list);
+  }
+  
+  public function getArc() {
+    return ARC2::getResource();
   }
 
   /**
@@ -61,12 +62,8 @@ class LinkedDataImportSimpleFetcher extends FeedsFetcher {
     return $form;
   }
 
-
-
   /**
    * Override parent::sourceFormValidate().
-   *
-   * @todo Invalid form elements are not being highlighted
    */
   public function sourceFormValidate(&$values) {
     // Validate the list of URIs.
@@ -76,12 +73,12 @@ class LinkedDataImportSimpleFetcher extends FeedsFetcher {
         foreach ($items as $v) {
           $v = trim($v);
           if (!empty($v) && !ld_import_validate_uri($v)) {
-            form_set_error('feeds][LinkedDataImportSimpleFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
+            form_set_error('feeds][list', t('The URI "%v" is not valid.', array('%v' => $v)));
           }
         }
       }
       else {
-        form_set_error('feeds][LinkedDataImportSimpleFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
+        form_set_error('feeds][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
       }
     }
   }

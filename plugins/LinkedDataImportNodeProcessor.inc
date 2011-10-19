@@ -1,45 +1,21 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Class definition of FeedsNodeProcessor.
+ * Home of the LinkedDataImportNodeProcessor.
  */
-
-// NOTE: The batch size must be greater than 1 otherwise
-// progress gets calculated incorrectly.
-define('LD_IMPORT_NODE_BATCH_SIZE', 10);
 
 /**
  * Class definition for LinkedDataImportNodeProcessor.
  */
 class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
-
+  
   /**
-   * Override parent::process().
-   */
-  public function process(FeedsSource $source, FeedsParserResult $parser_result) {
-    parent::process($source, $parser_result);
-
-    // If caching is disabled, clear out the ARC index.
-    if (!$this->config['arc_caching'] && is_object($batch->arc)) {
-      $batch->arc->index = array();
-      $batch->arc->fetched = array();
-    }
-
-    // Delete the temp file if processing is complete.
-    if (! count($parser_result->items)) {
-      file_unmanaged_delete($parser_result->temp_file);
-    }
-  }
-
-  /**
-   * Override parent::map() to add some defaults.
+   * Override parent::map() to set some defaults before mapping.
    */
   protected function map(FeedsSource $source, FeedsParserResult $result, $target_item = NULL) {
     if ($target_item) {
       $individual = $result->currentItem();
-
       // Setting the rdfs:label as default title here, but it can 
       // be overridden with mappings.
       $target_item->title = $individual->getLabel();
@@ -48,37 +24,9 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
     parent::loadMappers();
     return parent::map($source, $result, $target_item);
   }
-
+  
   /**
-   * Override setTargetElement to only take first value
-   * from multi-valued fields.
-   */
-  public function setTargetElement(FeedsSource $source, $target_item, $target_element, $value) {
-    // If we have a multi-value array, use the first value.
-    if (is_array($value)) {
-      $value = (!empty($value)) ? array_shift($value) : '';
-    }
-    parent::setTargetElement($source, $target_item, $target_element, $value);
-  }
-
-  /**
-   * Override mapping targets to add our own hook.
-   */
-  public function getMappingTargets() {
-    $type = node_type_get_type($this->config['content_type']);
-    $targets = parent::getMappingTargets();
-
-    // Load mappers bundled with Feeds.
-    self::loadMappers();
-
-    // Let other modules expose mapping targets.
-    feeds_alter('ld_import_node_processor_targets', $targets, 'node', $this->config['content_type']);
-
-    return $targets;
-  }
-
-  /**
-   * Override parent::existingEntityId() since don't use unique targets,
+   * Override parent::existingEntityId() since we don't use unique targets,
    * just the URI with url field.
    */
   protected function existingEntityId(FeedsSource $source, FeedsParserResult $result) {
@@ -93,37 +41,33 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
 
     return ($entity_id) ? $entity_id : 0;
   }
-
+  
   /**
-   * Override parent::configDefaults().
+   * Override parent::getLimit() to use config value instead of system variable.
+   */
+  public function getLimit() {
+    return $this->config['batch_size'];
+  }
+  
+  /**
+   * Override parent::configDefaults() to add default batch size.
    */
   public function configDefaults() {
     $defaults = parent::configDefaults();
-    $defaults['arc_caching'] = 1;
-    $defaults['batch_size'] = LD_IMPORT_NODE_BATCH_SIZE;
+    $defaults['batch_size'] = 1;
     return $defaults;
   }
 
   /**
-   * Override parent::configForm().
+   * Override parent::configForm() to add batch size option.
    */
   public function configForm($form_state) {
     $form = parent::configForm($form_state);
-    $form['arc_caching'] = array(
-      '#type' => 'radios',
-      '#title' => t('Cache data during import'),
-      '#description' => t('Normally RDF content will be cached as it is retrieved the server. For large imports this can cause PHP to hit memory limits. <strong>Turning off caching can make imports slower, but overall more reliable.</strong>'),
-      '#options' => array(
-        1 => 'Enabled',
-        0 => 'Disabled',
-      ),
-      '#default_value' => $this->config['arc_caching'],
-    );
     $form['batch_size'] = array(
       '#type' => 'select',
       '#title' => t('Batch size'),
       '#description' => t('Number of URIs to fetch and process into nodes at a time (using Batch API). Setting this higher can make large imports faster, but can lead to PHP timeouts depending on your max_execution_time setting.'),
-      '#options' => drupal_map_assoc(array(2,3,4,5,6,7,8,9,10,15,20,30,40,50,100)),
+      '#options' => drupal_map_assoc(array(1,2,3,4,5,6,7,8,9,10,15,20,30,40,50,100)),
       '#default_value' => $this->config['batch_size'],
     );
     return $form;

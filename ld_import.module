@@ -1,44 +1,9 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Linked Data Import module - Feeds plugins with added 'preview' functionality.
+ * Linked Data Import - Feeds plugins for importing Linked Data.
  */
-
-/**
- * Implements hook_init().
- */
-function ld_import_init() {
-  module_load_include('inc', 'ld_import', 'ld_import.classes');
-  ld_import_include_arc();
-}
-
-/**
- * Implements hook_cron().
- *
- * Clean up any temp files lingering from imports
- * that ended prematurely.
- */
-function ld_import_cron() {
-  foreach (file_scan_directory(file_directory_temp(), '^ld_import_batch') as $file) {
-    file_delete($file->filename);
-  }
-}
-
-/**
- * Implements hook_theme().
- */
-function ld_import_theme() {
-  return array(
-    'ld_import_samples' => array(
-      'arguments' => array('samples' => array()),
-    ),
-    'ld_import_sample' => array(
-      'arguments' => array('sample' => array()),
-    ),
-  );
-}
 
 /**
 * Implements hook_feeds_plugins().
@@ -57,14 +22,14 @@ function ld_import_feeds_plugins() {
       'path' => $path,
     ),
   );
-  $info['LinkedDataImportSimpleFetcher'] = array(
-    'name' => 'Linked Data Import Simple Fetcher',
+  $info['LinkedDataImportFetcher'] = array(
+    'name' => 'Linked Data Import Fetcher',
     'description' => 'Fetches Linked Data via HTTP content negotiation',
     'hidden' => FALSE,
     'handler' => array(
       'parent' => 'FeedsFetcher',
-      'class' => 'LinkedDataImportSimpleFetcher',
-      'file' => 'LinkedDataImportSimpleFetcher.inc',
+      'class' => 'LinkedDataImportFetcher',
+      'file' => 'LinkedDataImportFetcher.inc',
       'path' => $path,
     ),
   );
@@ -91,209 +56,6 @@ function ld_import_feeds_plugins() {
     ),
   );
   return $info;
-}
-
-/**
- * Implements hook_form_alter().
- *
- * Add importer id and feed nid (0 for node-less feeds) to the Feeds source form.
- * These are needed for the batch process that fetches feed previews. The values
- * must be added here with an alter because the source form itself has no
- * awareness of the active importer or feed nid.
- */
-function ld_import_form_alter(&$form, $form_state, $form_id) {
-  if ($form['#id'] == 'node-form' || $form['#id'] == 'feeds-import-form') {
-
-    $form['feeds']['#title'] = t('Linked Data import');
-
-    // Only continue if there is a Feeds source form present
-    // and our parser is being used.
-    if (isset($form['feeds']['LinkedDataImportParser'])) {
-
-      $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form['#feed_id'];
-      $feed_nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : 0;
-
-      // If the node form has not been saved yet remove
-      // some of the preview elements and change the text.
-      if ($form['#id'] == 'node-form' && !$feed_nid) {
-        $form['feeds']['LinkedDataImportParser']['preview']['status_message']['#value'] = t('Run a preview to see sample data for this import. The preview is also used to show available properties on the mappings page.');
-      }
-
-      // Store values required by the preview submit handler.
-      $form['ld_import_feed_nid'] = array(
-        '#type' => 'value',
-        '#value' => $feed_nid,
-      );
-      $form['ld_import_importer'] = array(
-        '#type' => 'value',
-        '#value' => $importer_id,
-      );
-
-      // If there is sample data, also add an "Edit mappings" link.
-      if (isset($form['feeds']['LinkedDataImportParser']['preview']['samples_table'])) {
-        $form['feeds']['LinkedDataImportParser']['mappings_link'] = array(
-          '#prefix' => '<p>',
-          '#markup' => l('Edit mappings', 'admin/structure/feeds/edit/' . $importer_id . '/mapping'),
-          '#suffix' => '</p>',
-          '#weight' => -15,
-        );
-      }
-    }
-  }
-
-  // Add a preview table to the mappings form.
-  if ($form_id == 'feeds_ui_mapping_form' && (get_class($form['#importer']->parser) == 'LinkedDataImportParser')) {
-    drupal_add_css(drupal_get_path('module', 'ld_import') . '/ld_import.css');
-    if ($samples = $form['#importer']->parser->loadSamples()) {
-      $fieldset = array(
-        '#type' => 'fieldset',
-        '#title' => t('Preview'),
-        '#value' => theme('ld_import_samples', $samples),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-      );
-      $form['legendset']['#suffix'] = drupal_render($fieldset);
-    }
-  }
-}
-
-/**
- * Submit handler for preview 'Save and Refresh' button
- *
- * Sets up a batch job to do a 'preview' import.
- *
- * This can be activated from two places:
- *  1. Node form
- *  2. Feeds' standalone import form
- * Form arrays will be different depending on where the preview originates.
- */
-function ld_import_refresh_preview_submit($form, $form_state) {
-  $importer_id = isset($form['#importer_id']) ? $form['#importer_id'] : $form_state['values']['ld_import_importer'];
-  $feed_nid = (isset($form_state['values']['ld_import_feed_nid'])) ? $form_state['values']['ld_import_feed_nid'] : 0;
-
-  // For a node form save the node. For a Feeds import form save the source.
-  if ($form['#id'] == 'node-form') {
-    module_load_include('inc', 'node', 'node.pages');
-    node_form_submit($form, $form_state);
-    // If this is a brand new node there wasn't an nid available.
-    // It should have been added to the $form_state after saving.
-    $feed_nid = $form_state['nid'];
-  }
-  else {
-    $source = feeds_source($form['#importer_id']);
-    $source->addConfig($form_state['values']['feeds']);
-    $source->save();
-  }
-
-  $batch = array(
-    'operations' => array(
-      array('ld_import_refresh_preview_process', array($importer_id, $feed_nid)),
-      ),
-    'title' => t('Refreshing preview'),
-    'init_message' => t('Initializing...'),
-    'progress_message' => t('Fetching data...'),
-    'error_message' => t('Could not finish fetching data.'),
-    'finished' => 'ld_import_refresh_preview_finished'
-  );
-  batch_set($batch);
-}
-
-/**
- * Batch API "process" callback for preview.
- *
- * Creates a FeedsImportBatch object that accumulates sample data
- * between passes. Works similarly to a real Feeds import
- * except instead of process() we're calling gatherSamples().
- */
-function ld_import_refresh_preview_process($importer_id = '', $feed_nid = 0, $context) {
-  $context['finished'] = 1;
-
-  // Stashing the nid in here so we can do a drupal_goto()
-  // redirect after the batch finishes.
-  $context['results']['feed_nid'] = $feed_nid;
-
-  try {
-    $source = feeds_source($importer_id, $feed_nid);
-
-    // Run a feed preview() to get an initial FeedsResult object
-    // and save it in the Batch API's sandbox to use for each pass.
-    // The object has to be serialized/unserialized by hand otherwise
-    // it will not re-initialize correctly.
-    if (!isset($context['sandbox']['parser_result'])) {
-
-      $parser_result = $source->preview();
-
-      // If we don't have a list of URIs to fetch, no reason to continue.
-      if (! count($parser_result->items)) {
-
-        drupal_set_message(t('Linked Data Import: Could not create a preview using importer %importer because there were no URIs to fetch.', array('%importer' => $importer_id)), 'warning');
-        $context['finished'] = 1;
-        return;
-      }
-
-      // If the number of items exceeds the specified limit,
-      // trim the items array.
-      $config = $source->getConfigFor($source->importer->parser);
-      $max = $config['fetch_limit'];
-      if ($max < count($parser_result->items) && $max > 0) {
-        $parser_result->items = array_slice($parser_result->items, 0, $max);
-      }
-
-      $parser_result->sample_limit = $config['sample_limit'];
-      $parser_result->fetch_labels = $config['fetch_labels'];
-
-      $context['sandbox']['total'] = count($parser_result->items);
-      $context['sandbox']['parser_result'] = serialize($parser_result);
-    }
-
-
-
-    $parser_result = isset($parser_result) ? $parser_result : unserialize($context['sandbox']['parser_result']);
-
-    // For some reason the __wakeup() function is not being called
-    // when the FeedsImportBatch object gets unserialized.
-    // So we have to give it a little kick in the ass to re-initialize ARC.
-    if (isset($parser_result->arc) && !is_object($parser_result->arc)) {
-      $parser_result->__wakeup();
-    }
-
-
-    // If gatherSamples() returns FALSE it means that we hit a limit
-    // and need to stop gathering samples.
-    $saved = $source->importer->parser->gatherSamples($parser_result);
-    $remaining = count($parser_result->items);
-
-
-    // Finished!
-    if (!$remaining || !$saved) {
-      // Only save new preview if there is actually data.
-      if (!empty($parser_result->samples)) {
-        drupal_set_message(t('Linked Data Import: The preview completed successfully.'), 'status', FALSE);
-        $source->importer->parser->saveSamples($parser_result, $source);
-      }
-      file_unmanaged_delete($parser_result->temp_file);
-      $context['finished'] = 1;
-      return;
-    }
-
-    $context['sandbox']['parser_result'] = serialize($parser_result);
-    $context['finished'] = ($context['sandbox']['total'] - $remaining) / $context['sandbox']['total'];
-  }
-  catch (Exception $e) {
-    drupal_set_message('Linked Data Import: ' . $e->getMessage(), 'error');
-  }
-}
-
-/**
- * Batch API "finished" callback for preview.
- *
- * If working with a feed node, redirect to node edit form
- * after the preview import is completed.
- */
-function ld_import_refresh_preview_finished($success, $results, $operations) {
-  if ($success && !empty($results['feed_nid'])) {
-    drupal_goto('node/' . $results['feed_nid'] . '/edit', '', 'ld_import-preview');
-  }
 }
 
 /**
@@ -351,66 +113,3 @@ function ld_import_is_valid_urn($urn) {
   return preg_match('/^urn:/', $urn) || preg_match('/^mailto:/', $urn); // FIXME
 }
 
-/**
- * Theme sample data for a feed as a table
- */
-function theme_ld_import_samples($samples) {
-  $output = '';
-  if (!empty($samples)) {
-    $rows = array();
-
-    foreach ($samples as $uri => $property) {
-      $row = $items = array();
-      $row[0] = array();
-      // If the sample array has been merged with others the label may an array
-      $label = is_array($property['label']) ? $property['label'][0] : $property['label'];
-      $row[0]['data'] = '<strong class="property-label">'. check_plain($label) .'</strong>';
-      $row[0]['data'] .= '<em class="property-uri">'. check_plain($uri) .'</em>';
-      $row[0]['class'] = 'property';
-
-      // Build a list of property values
-      foreach ($property['values'] as $i => $item) {
-        $items[$i] = theme('ld_import_sample', $item);
-      }
-
-      $row[1] = theme('item_list', array("items" => $items));
-      $rows[] = $row;
-    }
-
-    // Sort by property name
-    uasort($rows, 'ld_import_sort_table_rows');
-    $header = array(
-      '0' => array('data' => t('Linked Data property'), 'class' => 'first'),
-      '1' => array('data' => t('Sample'), 'class' => 'second'),
-    );
-    $output = theme('table', array("header" => $header, "rows" => $rows, "attributes" => array('class' => array('ld_import-samples'))));
-  }
-  return $output;
-}
-
-/**
- * Theme a single sample
- */
-function theme_ld_import_sample($item) {
-  $sample = '';
-
-  // Handle object properties differently
-  if ($item['type'] == 'uri') {
-    // Only output a label if it's there
-    if (!empty($item['label'])) {
-      $sample = '<p class="label">'. check_plain($item['label']) .'</p>';
-    }
-    $sample .= '<em class="uri">'. check_plain($item['value']) .'</em>';
-  }
-  else {
-    $sample = '<p class="value">'. check_plain($item['value']) .'</p>';
-  }
-  return $sample;
-}
-
-/**
- * uasort() callback for sorting table rows by property name
- */
-function ld_import_sort_table_rows($a, $b) {
-  return strcasecmp($a[0]['data'], $b[0]['data']);
-}

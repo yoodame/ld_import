@@ -1,13 +1,10 @@
 <?php
-// $Id$
 
 /**
  * @file
  * Home of the LinkedDataImportSparqlFetcher.
  */
 
-// The LinkedDataImportFetcherResult class has been separated so it can
-// be used with multiple fetchers.
 require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
 
 /**
@@ -19,24 +16,15 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
    * Implementation of FeedsFetcher::fetch().
    */
   public function fetch(FeedsSource $source) {
-    $source_config = $source->getConfigFor($this);
-    $endpoint = array(
-      'remote_store_endpoint' => $source_config['endpoint'],
-    );
-    $arc = ARC2::getResource();
-    $arc->setStore(ARC2::getRemoteStore($endpoint));
-
-    if ($this->config['enable_data_queries'] && !empty($source_config['data_query'])) {
-      $this->getSourceData($source_config['data_query'], $arc);
-    }
-
-    return new LinkedDataImportFetcherResult($this->getURIs($source_config), $arc);
+    return new LinkedDataImportFetcherResult($this->getURIs($source));
   }
 
   /**
    * Build a list of URIs from the source config.
    */
-  public function getURIs($source_config) {
+  public function getURIs(FeedsSource $source) {
+    $source_config = $source->getConfigFor($this);
+    
     $uri_list = array();
 
     // Gather manually-entered URIs
@@ -68,17 +56,15 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
     }
     return array_values($uri_list);
   }
-
-  public function getSourceData($query, $arc) {
-    $index = $arc->store->query($query, 'raw');
-    if (count($index) > 1) {
-      $arc->index = ARC2::getMergedIndex($index);
-      $arc->fetched = array_keys($index);
-    }
-    else {
-      $errors = !empty($index['errors']) ? theme_item_list($index['errors']) : NULL;
-      throw new Exception(t('Could not retrieve any data using the provided data query. !errors', array('!errors' => $errors)));
-    }
+  
+  public function getArc(FeedsSource $source)  {
+    $source_config = $source->getConfigFor($this);
+    $endpoint = array(
+      'remote_store_endpoint' => $source_config['endpoint'],
+    );
+    $arc = ARC2::getResource();
+    $arc->setStore(ARC2::getRemoteStore($endpoint));
+    return $arc;
   }
 
   /**
@@ -119,14 +105,6 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
       '#rows' => 6,
       '#required' => FALSE,
     );
-    $form['data_query'] = array(
-      '#type' => ($this->config['enable_data_queries']) ? 'textarea' : 'hidden',
-      '#title' => t('Data query'),
-      '#description' => t('Enter a CONSTRUCT query that returns a graph with all data required for this import.'),
-      '#default_value' => isset($source_config['data_query']) ? $source_config['data_query'] : '',
-      '#rows' => 6,
-      '#required' => FALSE,
-    );
     return $form;
   }
 
@@ -144,8 +122,8 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
 
     // Make sure there is at least one field is provided.
     if (empty($values['list']) && empty($values['list_query'])) {
-      form_set_error('feeds][LinkedDataImportSparqlFetcher][list', t('Either a list of URIs or a SPARQL query is required.'));
-      form_set_error('feeds][LinkedDataImportSparqlFetcher][list_query', '');
+      form_set_error('feeds][LinkedDataImportSparqlFetcher][list_query', t('Either a list of URIs or a SPARQL query is required.'));
+      form_set_error('feeds][LinkedDataImportSparqlFetcher][list', '');
     }
 
     // Validate the list of URIs.
@@ -171,38 +149,5 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
         form_set_error('feeds][LinkedDataImportSparqlFetcher][list_query', t('There is a problem with the SPARQL query.') . theme_item_list($errors));
       }
     }
-    // Validate the SPARQL query.
-    if (isset($values['data_query']) && !empty($values['data_query'])) {
-      $errors = array();
-      if (!ld_import_validate_sparql($values['data_query'], $errors)) {
-        form_set_error('feeds][LinkedDataImportSparqlFetcher][data_query', t('There is a problem with the data query.') . theme_item_list($errors));
-      }
-    }
-  }
-
-  /**
-   * Override parent::configDefaults().
-   */
-  public function configDefaults() {
-    return array(
-      'enable_data_queries' => 0,
-    );
-  }
-
-  /**
-   * Override parent::configForm().
-   */
-  public function configForm($form_state) {
-    $form['enable_data_queries'] = array(
-      '#type' => 'radios',
-      '#title' => t('Enable data queries'),
-      '#description' => t('<p>Allow a query to be provided that retrieves a graph of all data necessary for import. This can make large imports MUCH more efficient. Normally, separate requests will be made to fetch <em>all properties</em> for each individual being mapped (both subjects and objects). This means a lot of HTTP requests and a lot of unnecessary data. By using a data query, only two requests are made: one for the list of URIs to import and one for the data needed for configured mappings.</p><p>Note: When a data query is provided, previews will also use that data.</p><p>Also: Be sure to set a large batch size under Processor -> Settings.</p>'),
-      '#options' => array(
-        1 => 'Yes',
-        0 => 'No',
-      ),
-      '#default_value' => $this->config['enable_data_queries'],
-    );
-    return $form;
   }
 }
