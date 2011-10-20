@@ -11,25 +11,36 @@
 function ld_import_feeds_plugins() {
   $path = drupal_get_path('module', 'ld_import') . '/plugins';
   $info = array();
-  $info['LinkedDataImportSparqlFetcher'] = array(
-    'name' => 'Linked Data Import SPARQL Fetcher',
-    'description' => 'Fetches Linked Data from a SPARQL endpoint',
-    'hidden' => FALSE,
-    'handler' => array(
-      'parent' => 'FeedsFetcher',
-      'class' => 'LinkedDataImportSparqlFetcher',
-      'file' => 'LinkedDataImportSparqlFetcher.inc',
-      'path' => $path,
-    ),
-  );
   $info['LinkedDataImportFetcher'] = array(
     'name' => 'Linked Data Import Fetcher',
-    'description' => 'Fetches Linked Data via HTTP content negotiation',
+    'description' => 'Enter a simple list of URIs for import',
     'hidden' => FALSE,
     'handler' => array(
       'parent' => 'FeedsFetcher',
       'class' => 'LinkedDataImportFetcher',
       'file' => 'LinkedDataImportFetcher.inc',
+      'path' => $path,
+    ),
+  );
+  $info['LinkedDataImportRdfUrlFetcher'] = array(
+    'name' => 'Linked Data Import RDF URL Fetcher',
+    'description' => 'Define a list of URIs by retrieving a remote RDF document',
+    'hidden' => FALSE,
+    'handler' => array(
+      'parent' => 'FeedsFetcher',
+      'class' => 'LinkedDataImportRdfUrlFetcher',
+      'file' => 'LinkedDataImportRdfUrlFetcher.inc',
+      'path' => $path,
+    ),
+  );
+  $info['LinkedDataImportSparqlFetcher'] = array(
+    'name' => 'Linked Data Import SPARQL Fetcher',
+    'description' => 'Define a list of URIs via SPARQL query',
+    'hidden' => FALSE,
+    'handler' => array(
+      'parent' => 'FeedsFetcher',
+      'class' => 'LinkedDataImportSparqlFetcher',
+      'file' => 'LinkedDataImportSparqlFetcher.inc',
       'path' => $path,
     ),
   );

@@ -5,7 +5,7 @@
  * Home of the LinkedDataImportFetcher.
  */
 
-require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
+require_once(dirname(__FILE__) . '/LinkedDataImportFetcherResult.inc');
 
 /**
  * Class definition for LinkedDataImportFetcher.
@@ -13,7 +13,7 @@ require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
 class LinkedDataImportFetcher extends FeedsFetcher {
 
   /**
-   * Implementation of FeedsFetcher::fetch().
+   * Implements FeedsFetcher::fetch().
    */
   public function fetch(FeedsSource $source) {
     return new LinkedDataImportFetcherResult($this->getURIs($source));
@@ -23,8 +23,9 @@ class LinkedDataImportFetcher extends FeedsFetcher {
    * Get the list of URIs entered by the user.
    */
   public function getURIs($source) {
-    $uri_list = array();
     $source_config = $source->getConfigFor($this);
+    
+    $uri_list = array();
 
     // Gather entered URIs.
     if (!empty($source_config['list'])) {

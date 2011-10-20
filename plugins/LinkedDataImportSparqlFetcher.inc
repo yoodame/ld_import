@@ -5,7 +5,7 @@
  * Home of the LinkedDataImportSparqlFetcher.
  */
 
-require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
+require_once(dirname(__FILE__) . '/LinkedDataImportFetcherResult.inc');
 
 /**
  * Class definition for LinkedDataImportSparqlFetcher.
@@ -13,7 +13,7 @@ require_once(dirname(__FILE__) .'/LinkedDataImportFetcherResult.inc');
 class LinkedDataImportSparqlFetcher extends FeedsFetcher {
 
   /**
-   * Implementation of FeedsFetcher::fetch().
+   * Implements FeedsFetcher::fetch().
    */
   public function fetch(FeedsSource $source) {
     return new LinkedDataImportFetcherResult($this->getURIs($source));
@@ -117,13 +117,13 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
 
     // Validate the endpoint.
     if (!empty($values['endpoint']) && !valid_url($values['endpoint'], TRUE)) {
-      form_set_error('feeds][LinkedDataImportSparqlFetcher][endpoint', t('The endpoint must be a valid URL.'));
+      form_set_error('feeds][' . get_class($this) . '][endpoint', t('The endpoint must be a valid URL.'));
     }
 
     // Make sure there is at least one field is provided.
     if (empty($values['list']) && empty($values['list_query'])) {
-      form_set_error('feeds][LinkedDataImportSparqlFetcher][list_query', t('Either a list of URIs or a SPARQL query is required.'));
-      form_set_error('feeds][LinkedDataImportSparqlFetcher][list', '');
+      form_set_error('feeds][' . get_class($this) . '][list_query', t('Either a list of URIs or a SPARQL query is required.'));
+      form_set_error('feeds][' . get_class($this) . '][list', '');
     }
 
     // Validate the list of URIs.
@@ -133,12 +133,12 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
         foreach ($items as $v) {
           $v = trim($v);
           if (!empty($v) && !ld_import_validate_uri($v)) {
-            form_set_error('feeds][LinkedDataImportSparqlFetcher][list', t('The URI "%v" is not valid.', array('%v' => $v)));
+            form_set_error('feeds][' . get_class($this) . '][list', t('The URI "%v" is not valid.', array('%v' => $v)));
           }
         }
       }
       else {
-        form_set_error('feeds][LinkedDataImportSparqlFetcher][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
+        form_set_error('feeds][' . get_class($this) . '][list', t('There is a problem with the list of URIs entered. Make sure they are valid and each is on a separate line.'));
       }
     }
 
@@ -146,7 +146,7 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
     if (isset($values['list_query']) && !empty($values['list_query'])) {
       $errors = array();
       if (! ld_import_validate_sparql($values['list_query'], $errors) ) {
-        form_set_error('feeds][LinkedDataImportSparqlFetcher][list_query', t('There is a problem with the SPARQL query.') . theme_item_list($errors));
+        form_set_error('feeds][' . get_class($this) . '][list_query', t('There is a problem with the SPARQL query.') . theme_item_list($errors));
       }
     }
   }
