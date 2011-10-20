@@ -10,14 +10,7 @@ require_once(dirname(__FILE__) . '/LinkedDataImportFetcherResult.inc');
 /**
  * Class definition for LinkedDataImportRdfUrlFetcher.
  */
-class LinkedDataImportRdfUrlFetcher extends FeedsFetcher {
-
-  /**
-   * Implements FeedsFetcher::fetch().
-   */
-  public function fetch(FeedsSource $source) {
-    return new LinkedDataImportFetcherResult($this->getURIs($source));
-  }
+class LinkedDataImportRdfUrlFetcher extends LinkedDataImportFetcher {
 
   /**
    * Get the list of URIs entered by the user.
@@ -33,10 +26,6 @@ class LinkedDataImportRdfUrlFetcher extends FeedsFetcher {
       $uri_list[] = $uri;
     }
     return $uri_list;
-  }
-  
-  public function getArc() {
-    return ARC2::getResource();
   }
 
   /**

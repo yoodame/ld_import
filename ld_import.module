@@ -27,7 +27,7 @@ function ld_import_feeds_plugins() {
     'description' => 'Define a list of URIs by retrieving a remote RDF document',
     'hidden' => FALSE,
     'handler' => array(
-      'parent' => 'FeedsFetcher',
+      'parent' => 'LinkedDataImportFetcher',
       'class' => 'LinkedDataImportRdfUrlFetcher',
       'file' => 'LinkedDataImportRdfUrlFetcher.inc',
       'path' => $path,
@@ -38,7 +38,7 @@ function ld_import_feeds_plugins() {
     'description' => 'Define a list of URIs via SPARQL query',
     'hidden' => FALSE,
     'handler' => array(
-      'parent' => 'FeedsFetcher',
+      'parent' => 'LinkedDataImportFetcher',
       'class' => 'LinkedDataImportSparqlFetcher',
       'file' => 'LinkedDataImportSparqlFetcher.inc',
       'path' => $path,

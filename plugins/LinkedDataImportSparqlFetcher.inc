@@ -10,14 +10,7 @@ require_once(dirname(__FILE__) . '/LinkedDataImportFetcherResult.inc');
 /**
  * Class definition for LinkedDataImportSparqlFetcher.
  */
-class LinkedDataImportSparqlFetcher extends FeedsFetcher {
-
-  /**
-   * Implements FeedsFetcher::fetch().
-   */
-  public function fetch(FeedsSource $source) {
-    return new LinkedDataImportFetcherResult($this->getURIs($source));
-  }
+class LinkedDataImportSparqlFetcher extends LinkedDataImportFetcher {
 
   /**
    * Build a list of URIs from the source config.
@@ -91,11 +84,6 @@ class LinkedDataImportSparqlFetcher extends FeedsFetcher {
       '#default_value' => isset($source_config['list_query']) ? $source_config['list_query'] : '',
       '#rows' => 6,
       '#required' => FALSE,
-    );
-    $form['divider'] = array(
-      '#prefix' => '<p><em>',
-      '#value' => t('or...'),
-      '#suffix' => '</em><p>',
     );
     $form['list'] = array(
       '#type' => 'textarea',
