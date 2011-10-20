@@ -72,4 +72,20 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
     );
     return $form;
   }
+  
+  /**
+   * Override parent::hash() to work on LinkedDataImportResource items.
+   */
+  protected function hash($item) {
+    static $serialized_mappings;
+    if (!$serialized_mappings) {
+      $serialized_mappings = serialize($this->config['mappings']);
+    }
+    // Trigger fetching of data if not already fetched.
+    $item->hasData();
+    // Extract the data fetched by ARC for only this item.
+    $serialized_data = serialize($item->getArc()->index[$item->getUri()]);
+    return hash('md5', $serialized_data . $serialized_mappings);
+  }
+  
 }
