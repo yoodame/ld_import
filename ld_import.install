@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * Module install and enable operations.
+ */
+
+/**
+ * Implements hook_enable().
+ *
+ * Clear the cache to display in Feeds plugin list.
+ */
+function ld_import_enable() {
+  cache_clear_all('plugins:feeds:plugins', 'cache');
+}
