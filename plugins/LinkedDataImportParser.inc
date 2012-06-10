@@ -71,7 +71,7 @@ class LinkedDataImportParser extends FeedsParser {
       return $resource->getUri();
     }
     else if ($element_key == 'Label') {
-      return $resource->getLabel();
+      return trim($resource->getLabel());
     }
     else if ($predicates = explode(' [] ', $element_key)) {
       $values = $this->extractPropertyValues($resource, $predicates);
@@ -87,14 +87,14 @@ class LinkedDataImportParser extends FeedsParser {
    */
   public function extractPropertyValues(LinkedDataImportResource $resource, $predicates) {
     $values = array();
-      
+    
     $predicate = current($predicates);
     
     // Only proceed if there is data for this predicate.
     if ($property_values = $resource->getProp($predicate)) {
       
       $next_predicate = next($predicates);
-      
+
       foreach ($property_values as $item) {
         if ($next_predicate && $item['type'] == 'uri') {
           $next_resource = new LinkedDataImportResource($item['value'], $resource->getArc(), $this->language);
