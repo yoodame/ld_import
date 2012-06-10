@@ -17,7 +17,7 @@ class LinkedDataImportSparqlFetcher extends LinkedDataImportFetcher {
    */
   public function getURIs(FeedsSource $source) {
     $source_config = $source->getConfigFor($this);
-    
+
     $uri_list = array();
 
     // Gather manually-entered URIs
@@ -49,7 +49,7 @@ class LinkedDataImportSparqlFetcher extends LinkedDataImportFetcher {
     }
     return array_values($uri_list);
   }
-  
+
   public function getArc(FeedsSource $source)  {
     $source_config = $source->getConfigFor($this);
     $endpoint = array(

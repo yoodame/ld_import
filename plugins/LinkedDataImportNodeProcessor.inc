@@ -9,14 +9,14 @@
  * Class definition for LinkedDataImportNodeProcessor.
  */
 class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
-  
+
   /**
    * Override parent::map() to set some defaults before mapping.
    */
   protected function map(FeedsSource $source, FeedsParserResult $result, $target_item = NULL) {
     if ($target_item) {
       $individual = $result->currentItem();
-      // Setting the rdfs:label as default title here, but it can 
+      // Setting the rdfs:label as default title here, but it can
       // be overridden with mappings.
       $target_item->title = $individual->getLabel();
       $target_item->feeds_item->url = $individual->getUri();
@@ -24,7 +24,7 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
     parent::loadMappers();
     return parent::map($source, $result, $target_item);
   }
-  
+
   /**
    * Override parent::existingEntityId() since we don't use unique targets,
    * just the URI with url field.
@@ -35,20 +35,20 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
       ->condition('feed_nid', $source->feed_nid)
       ->condition('entity_type', $this->entityType())
       ->condition('id', $source->id);
-      
+
     $uri = $result->current_item->getUri();
     $entity_id = $query->condition('url', $uri)->execute()->fetchField();
 
     return ($entity_id) ? $entity_id : 0;
   }
-  
+
   /**
    * Override parent::getLimit() to use config value instead of system variable.
    */
   public function getLimit() {
     return $this->config['batch_size'];
   }
-  
+
   /**
    * Override parent::configDefaults() to add default batch size.
    */
@@ -61,7 +61,7 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
   /**
    * Override parent::configForm() to add batch size option.
    */
-  public function configForm($form_state) {
+  public function configForm(&$form_state) {
     $form = parent::configForm($form_state);
     $form['batch_size'] = array(
       '#type' => 'select',
@@ -72,7 +72,7 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
     );
     return $form;
   }
-  
+
   /**
    * Override parent::hash() to work on LinkedDataImportResource items.
    */
@@ -87,5 +87,5 @@ class LinkedDataImportNodeProcessor extends FeedsNodeProcessor {
     $serialized_data = serialize($item->getArc()->index[$item->getUri()]);
     return hash('md5', $serialized_data . $serialized_mappings);
   }
-  
+
 }

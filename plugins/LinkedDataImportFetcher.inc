@@ -22,9 +22,9 @@ class LinkedDataImportFetcher extends FeedsFetcher {
   /**
    * Get the list of URIs entered by the user.
    */
-  public function getURIs($source) {
+  public function getURIs(FeedsSource $source) {
     $source_config = $source->getConfigFor($this);
-    
+
     $uri_list = array();
 
     // Gather entered URIs.
@@ -42,8 +42,8 @@ class LinkedDataImportFetcher extends FeedsFetcher {
     }
     return array_values($uri_list);
   }
-  
-  public function getArc() {
+
+  public function getArc(FeedsSource $source) {
     return ARC2::getResource();
   }
 

@@ -15,12 +15,12 @@ class LinkedDataImportRdfUrlFetcher extends LinkedDataImportFetcher {
   /**
    * Get the list of URIs entered by the user.
    */
-  public function getURIs($source) {
+  public function getURIs(FeedsSource $source) {
     $source_config = $source->getConfigFor($this);
-    
+
     $arc = ARC2::getRDFParser();
     $arc->parse($source_config['url']);
-    
+
     $uri_list = array();
     foreach ($arc->getSimpleIndex() as $uri => $data) {
       $uri_list[] = $uri;

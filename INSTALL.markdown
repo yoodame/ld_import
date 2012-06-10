@@ -23,10 +23,10 @@ Installation
 ============
 1. Download and enable the following Drupal modules: ctools, job_scheduler, feeds, feeds_ui
 
-2. Install the ARC2 library. 
+2. Install the ARC2 library.
 
    There are a few different ways to do this...
-   
+
    - If you use the RDFx module, or other modules that utilize ARC, it should be available to Linked Data Import already.
    - (Using Libraries module) Unpack (or git clone) the ARC2 bundle into either "sites/all/libraries/arc" or "sites/<sitename>/libraries/arc"
    - Unpack or clone the ARC2 bundle directly into "modules/ld_import/arc"
@@ -34,7 +34,7 @@ Installation
    Drupal will show a notice if Linked Data Import has trouble finding ARC.
 
 3. Download and enable the Linked Data Import module.
-  
+
 
 System settings
 ---------------
@@ -73,28 +73,28 @@ To create your first Linked Data importer...
 2. Give it a name and description.
 
 3. On the next screen you should see four sections: Basic settings, Fetcher, Parser, Processor. We'll go through these one by one...
-   
-   1. **Basic settings** 
-   
+
+   1. **Basic settings**
+
       Click the "Settings" link
       - *Attach to content type:* choose "Use standalone form"
       - *Minimum refresh period:* for testing, choose "Never"
       - *Import on submission:* leave this on when using "Use standalone form"
-      
+
    2. **Fetcher**
-   
+
       Change to either "Linked Data Import Simple Fetcher" or "Linked Data Import SPARQL Fetcher" depending on your data source.
-   
+
    3. **Parser**
-   
+
       Change to "Linked Data Import Parser"
-   
+
    4. **Processor**
-      
+
       Change to "Linked Data Import Node Processor"
-   
+
    From this point you can ignore the first 3 sections because all the settings you'll be changing are in the "Processor" section.
-   
+
 4. Go to "Settings" under the "Processor" section.
 
    - *Content type:* select the type of nodes you want to produce
@@ -102,16 +102,16 @@ To create your first Linked Data importer...
    - *Author:* self-explanatory
    - *Expire nodes:* this could be useful for time-sensitive data
    - *Update existing nodes:* also self-explanatory
-   
-5. Before setting up any mappings we need to run a *preview* of the data to see properties available for mapping. Go to "/import" where you should see the importer you just created. Click on the importer. If it's not there, you probably attached the importer to a content type, which means will want to create a new node of that type. 
+
+5. Before setting up any mappings we need to run a *preview* of the data to see properties available for mapping. Go to "/import" where you should see the importer you just created. Click on the importer. If it's not there, you probably attached the importer to a content type, which means will want to create a new node of that type.
 
 6. Paste in your list of URIs or SPARQL query. Leave the preview options on their default settings for now (but if your URI list is huge, try setting the item limit around 20 or 50). Click "Save and Preview".
 
-7. Once the preview is finished, you should see a table full of sample data -- if you don't see any sample data, there may be a problem with the URIs or SPARQL query you entered. The properties listed here are all the RDF properties being used among the URIs provided. 
+7. Once the preview is finished, you should see a table full of sample data -- if you don't see any sample data, there may be a problem with the URIs or SPARQL query you entered. The properties listed here are all the RDF properties being used among the URIs provided.
 
 8. Go to the "Edit mappings" link just above the preview table. You can also go to "/admin/build/feeds/<importer_name>/mapping".
 
-9. The mappings screen is where you define how RDF property data gets mapped to Drupal nodes. One node will be created/updated for every URI you provided. 
+9. The mappings screen is where you define how RDF property data gets mapped to Drupal nodes. One node will be created/updated for every URI you provided.
 
 10. When finished setting up mappings, go back to "/import" and then to your importer.
 

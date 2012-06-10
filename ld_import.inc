@@ -4,14 +4,14 @@
  * @file
  * Class definition for LinkedDataImportResource.
  *
- * This class is mainly a wrapper around the functionality provided by 
+ * This class is mainly a wrapper around the functionality provided by
  * an ARC2_Resource object.
  *
  * @see ARC2_Resource
  */
- 
+
 ld_import_include_arc();
- 
+
 /**
  * Class definition for LinkedDataImportResource.
  */
@@ -26,7 +26,7 @@ class LinkedDataImportResource {
     $this->arc = $arc;
     $this->language = $language;
   }
-  
+
   public function getUri() {
     return $this->uri;
   }
@@ -37,15 +37,15 @@ class LinkedDataImportResource {
     }
     return $this->label;
   }
-  
+
   public function getLanguage() {
     return $this->language;
   }
-  
+
   public function getArc() {
     return $this->arc;
   }
-  
+
   public function getProps() {
     $props = $this->arc->getProps(NULL, $this->uri);
     foreach ($props as &$prop) {
@@ -53,12 +53,12 @@ class LinkedDataImportResource {
     }
     return $props;
   }
-  
+
   public function getProp($prop_uri) {
     $prop = $this->arc->getProps($prop_uri, $this->uri);
     return $this->filterLanguage($prop);
   }
-  
+
   public function getPropValues($prop_uri) {
     $values = array();
     if ($items = $this->arc->getProps($prop_uri, $this->uri)) {
@@ -68,7 +68,7 @@ class LinkedDataImportResource {
     }
     return $values;
   }
-  
+
   public function getPropValue($prop_uri) {
     $values = $this->getPropValues($prop_uri);
     return !empty($values) ? reset($values) : '';
@@ -78,7 +78,7 @@ class LinkedDataImportResource {
     $props = $this->arc->getProps(null, $this->uri);
     return count($props) ? TRUE : FALSE;
   }
- 
+
   /**
    * If the language is explicitly set for property values, strip out any
    * values that do not match the target language.
