@@ -1,5 +1,6 @@
 name = "Linked Data Import"
-description = "A set of Feeds plugins used to import remote Linked Data content via SPARQL or content negotiation"
+description = "A set of Feeds plugins for importing Linked Data content"
 package = Feeds
 dependencies[] = feeds
 core = 7.x
+files[] = ld_import.inc

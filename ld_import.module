@@ -2,68 +2,33 @@
 
 /**
  * @file
- * Linked Data Import - Feeds plugins for importing Linked Data.
+ * Linked Data Import - Feeds plugins for importing Linked Data content.
  */
+
+define('LD_IMPORT_LABEL_URI', 'http://www.w3.org/2000/01/rdf-schema#label');
 
 /**
 * Implements hook_feeds_plugins().
 */
 function ld_import_feeds_plugins() {
-  $path = drupal_get_path('module', 'ld_import') . '/plugins';
-  $info = array();
-  $info['LinkedDataImportFetcher'] = array(
+  $info['LdImportFetcher'] = array(
     'name' => 'Linked Data Import Fetcher',
-    'description' => 'Enter a simple list of URIs for import',
-    'hidden' => FALSE,
+    'description' => 'Simple text input for list of URIs.',
     'handler' => array(
       'parent' => 'FeedsFetcher',
-      'class' => 'LinkedDataImportFetcher',
-      'file' => 'LinkedDataImportFetcher.inc',
-      'path' => $path,
+      'class' => 'LdImportFetcher',
+      'file' => 'LdImportFetcher.inc',
+      'path' => drupal_get_path('module', 'ld_import') . '/plugins',
     ),
   );
-  $info['LinkedDataImportRdfUrlFetcher'] = array(
-    'name' => 'Linked Data Import RDF URL Fetcher',
-    'description' => 'Define a list of URIs by retrieving a remote RDF document',
-    'hidden' => FALSE,
-    'handler' => array(
-      'parent' => 'LinkedDataImportFetcher',
-      'class' => 'LinkedDataImportRdfUrlFetcher',
-      'file' => 'LinkedDataImportRdfUrlFetcher.inc',
-      'path' => $path,
-    ),
-  );
-  $info['LinkedDataImportSparqlFetcher'] = array(
-    'name' => 'Linked Data Import SPARQL Fetcher',
-    'description' => 'Define a list of URIs via SPARQL query',
-    'hidden' => FALSE,
-    'handler' => array(
-      'parent' => 'LinkedDataImportFetcher',
-      'class' => 'LinkedDataImportSparqlFetcher',
-      'file' => 'LinkedDataImportSparqlFetcher.inc',
-      'path' => $path,
-    ),
-  );
-  $info['LinkedDataImportParser'] = array(
+  $info['LdImportParser'] = array(
     'name' => 'Linked Data Import Parser',
-    'description' => 'Prepares Linked Data for processing',
-    'hidden' => FALSE,
+    'description' => 'Prepares Linked Data for processing.',
     'handler' => array(
       'parent' => 'FeedsParser',
-      'class' => 'LinkedDataImportParser',
-      'file' => 'LinkedDataImportParser.inc',
-      'path' => $path,
-    ),
-  );
-  $info['LinkedDataImportNodeProcessor'] = array(
-    'name' => 'Linked Data Import Node Processor',
-    'description' => 'Creates and updates nodes from Linked Data',
-    'hidden' => FALSE,
-    'handler' => array(
-      'parent' => 'FeedsNodeProcessor',
-      'class' => 'LinkedDataImportNodeProcessor',
-      'file' => 'LinkedDataImportNodeProcessor.inc',
-      'path' => $path,
+      'class' => 'LdImportParser',
+      'file' => 'LdImportParser.inc',
+      'path' => drupal_get_path('module', 'ld_import') . '/plugins',
     ),
   );
   return $info;
@@ -71,56 +36,16 @@ function ld_import_feeds_plugins() {
 
 /**
  * Include the ARC2 library.
- *
- * Look in the following locations:
- * 1. <libraries directory>/arc
- * 2. <RDF module>/vendor/arc
- * 3. <ld_import module>/arc
  */
 function ld_import_include_arc() {
-  if (!class_exists('ARC2')) {
-    if (module_exists('libraries') && file_exists(libraries_get_path('arc') ."/ARC2.php")) {
-      @include_once libraries_get_path('arc') .'/ARC2.php';
-    }
-    elseif (defined('RDF_ARC2_PATH') && file_exists(RDF_ARC2_PATH . '/ARC2.php')) {
-      @include_once RDF_ARC2_PATH . '/ARC2.php';
-    }
-    elseif (file_exists(drupal_get_path('module', 'ld_import') . '/arc/ARC2.php')) {
-      @include_once drupal_get_path('module', 'ld_import') . '/arc/ARC2.php';
-    }
+  if (class_exists('ARC2_Class')) {
+    return;
+  }
+  if (module_exists('libraries') && file_exists(libraries_get_path('arc') . '/ARC2.php')) {
+    include_once libraries_get_path('arc') . '/ARC2.php';
+    ARC2::getResource();
   }
   if (!class_exists('ARC2')) {
-    drupal_set_message(t('Linked Data Import: The ARC2 library could not be loaded. ARC2 is required for this module to work. Check the INSTALL file inside the ld_import module folder to find out how ARC can be installed.'), 'warning', FALSE);
+    watchdog('ld_import', 'The ARC2 library could not be loaded. ARC2 is required for this module to work. Check the INSTALL file inside the ld_import module folder to find out how ARC can be installed.', WATCHDOG_ERROR);
   }
 }
-
-/**
- * Validate a SPARQL query string.
- */
-function ld_import_validate_sparql($query, $errors = NULL) {
-  $parser = ARC2::getSPARQLParser();
-  $parser->parse($query);
-
-  if ($parser->getErrors()) {
-    $errors = $parser->getErrors();
-    return FALSE;
-  }
-  return TRUE;
-}
-
-/**
- * Validation functions from the RDF module.
- */
-function ld_import_validate_uri($uri) {
-  return ld_import_is_valid_url($uri) || ld_import_is_valid_urn($uri);
-}
-
-function ld_import_is_valid_url($url) {
-  static $allowed_characters = '[a-z0-9\/:_\-_\.\?\$,;~=#&%\+]';
-  return preg_match("/^([a-z]+):\/\/" . $allowed_characters . "+$/i", (string)$url);
-}
-
-function ld_import_is_valid_urn($urn) {
-  return preg_match('/^urn:/', $urn) || preg_match('/^mailto:/', $urn); // FIXME
-}
-
